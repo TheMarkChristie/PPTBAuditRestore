@@ -1,6 +1,6 @@
 {
   "name": "proximo3-audit-restore",
-  "version": "1.6.8",
+  "version": "1.6.9",
   "displayName": "Audit Restore",
   "description": "Restore Dataverse records to their field state at a point in time using the audit log. Find affected records by table/user/date window, preview before→after changes, and apply in pages.",
   "main": "index.html",

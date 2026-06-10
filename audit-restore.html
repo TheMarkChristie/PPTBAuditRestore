@@ -81,6 +81,14 @@
   .rec .rest { color: var(--ok); font-weight: 600; }
   .rec .flags { margin-top: 8px; }
   .banner { border-left: 4px solid var(--red); background: #fff5f6; padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+  .combo { position: relative; }
+  .combo-list { position: absolute; z-index: 50; left: 0; right: 0; top: 100%; margin-top: 2px; background: #fff;
+    border: 1px solid var(--line); border-radius: 7px; max-height: 240px; overflow: auto;
+    box-shadow: 0 6px 18px rgba(0,0,0,.12); display: none; }
+  .combo-list.open { display: block; }
+  .combo-list .opt { padding: 7px 11px; font-size: 13px; cursor: pointer; }
+  .combo-list .opt:hover, .combo-list .opt.active { background: #eef3fb; }
+  .combo-list .empty { padding: 7px 11px; color: #999; font-size: 12px; }
   .builderbox { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; background: #f7f9fc; }
   .builderbox summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--charcoal); }
   .builderbox[open] summary { margin-bottom: 6px; }
@@ -107,12 +115,18 @@
       <summary>⚙ Build FetchXML from audit history — find records changed in a date window</summary>
       <div class="row">
         <div>
-          <label for="bTable">Table</label>
-          <select id="bTable" title="Table"><option value="">— expand to load tables —</option></select>
+          <label for="bTableInput">Table</label>
+          <div class="combo">
+            <input type="text" id="bTableInput" autocomplete="off" placeholder="expand to load audited tables…" title="Table" />
+            <div class="combo-list" id="bTableList"></div>
+          </div>
         </div>
         <div>
-          <label for="bUser">Changed by <span style="font-weight:400;color:#999">(optional)</span></label>
-          <select id="bUser" title="Changed by user"><option value="">(all users)</option></select>
+          <label for="bUserInput">Changed by <span style="font-weight:400;color:#999">(optional)</span></label>
+          <div class="combo">
+            <input type="text" id="bUserInput" autocomplete="off" placeholder="(all users)" title="Changed by user" />
+            <div class="combo-list" id="bUserList"></div>
+          </div>
         </div>
       </div>
       <div class="row">
@@ -213,7 +227,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.8";        // tool build — bump on each deploy
+const APP_VERSION = "1.6.9";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -912,16 +926,16 @@ async function resolveUserId(input) {
 
 async function generateAuditFetch() {
   try {
-    const table = $("bTable").value.trim();
-    if (!table) { alert("Enter the table logical name."); return; }
+    const table = tableCombo.value.trim();
+    if (!table) { alert("Choose a table from the list."); return; }
     const tz = $("bTz").value;
     const start = localToUtcIso($("bStart").value, tz);
     const end = localToUtcIso($("bEnd").value, tz);
 
     let userId = null;
-    if ($("bUser").value.trim()) {
+    if (userCombo.value.trim()) {
       setStatus("Resolving user…");
-      userId = await resolveUserId($("bUser").value.trim());
+      userId = await resolveUserId(userCombo.value.trim());
     }
     const conds = [
       `<condition attribute="objecttypecode" operator="eq" value="${table}" />`,
@@ -952,6 +966,40 @@ async function generateAuditFetch() {
 }
 $("genBtn").addEventListener("click", generateAuditFetch);
 
+// Searchable combobox — native <select> popups misbehave inside the Toolbox webview
+// (they close before a click registers), so we use a plain element-based dropdown.
+function makeCombo(inputId, listId) {
+  const input = $(inputId), list = $(listId);
+  let items = [], filtered = [], value = "";
+  function render() {
+    const q = input.value.trim().toLowerCase();
+    filtered = (q ? items.filter(it => it.label.toLowerCase().includes(q)) : items).slice(0, 400);
+    if (!items.length) list.innerHTML = `<div class="empty">loading…</div>`;
+    else if (!filtered.length) list.innerHTML = `<div class="empty">no matches</div>`;
+    else list.innerHTML = filtered.map((it, i) => `<div class="opt" data-i="${i}">${escapeHtml(it.label)}</div>`).join("");
+  }
+  function open() { render(); list.classList.add("open"); }
+  function close() { list.classList.remove("open"); }
+  input.addEventListener("focus", open);
+  input.addEventListener("input", () => { value = ""; open(); });   // typing clears the pick until re-selected
+  input.addEventListener("blur", () => setTimeout(close, 150));      // delay so a click can land first
+  list.addEventListener("mousedown", e => {                          // mousedown beats the input's blur
+    const opt = e.target.closest(".opt"); if (!opt) return;
+    e.preventDefault();
+    const it = filtered[+opt.dataset.i]; if (!it) return;
+    value = it.value; input.value = it.label; close();
+  });
+  return {
+    setItems(arr) { items = arr; if (list.classList.contains("open")) render(); },
+    get value() { return value; },
+    clear() { value = ""; input.value = ""; },
+  };
+}
+const tableCombo = makeCombo("bTableInput", "bTableList");
+const userCombo = makeCombo("bUserInput", "bUserList");
+$("bTableInput").addEventListener("focus", populateBuilderLists);   // load on first interaction too
+$("bUserInput").addEventListener("focus", populateBuilderLists);
+
 // Populate the Table + Changed-by pickers from the connected org (lazily, on first expand).
 let builderLoaded = false;
 async function populateBuilderLists() {
@@ -966,8 +1014,8 @@ async function populateBuilderLists() {
       ln: e.LogicalName,
       dn: (e.DisplayName && e.DisplayName.UserLocalizedLabel && e.DisplayName.UserLocalizedLabel.Label) || e.LogicalName
     })).sort((a, b) => a.dn.localeCompare(b.dn));
-    $("bTable").innerHTML = `<option value="">— choose an audited table —</option>`
-      + tables.map(t => `<option value="${t.ln}">${escapeHtml(t.dn)} (${t.ln})</option>`).join("");
+    tableCombo.setItems(tables.map(t => ({ value: t.ln, label: `${t.dn} (${t.ln})` })));
+    $("bTableInput").placeholder = `search ${tables.length} audited tables…`;
     log(`Loaded ${tables.length} audited tables into the picker.`);
   } catch (e) { log("Could not load tables: " + e.message); builderLoaded = false; }
   // Users — active (enabled) users, sorted by name.
@@ -976,10 +1024,11 @@ async function populateBuilderLists() {
     const ud = await apiGet(`${baseUrl()}/systemusers?$select=fullname,internalemailaddress,systemuserid`
       + `&$filter=${encodeURIComponent("isdisabled eq false")}&$orderby=fullname`);
     const users = ud.value || [];
-    $("bUser").innerHTML = `<option value="">(all users)</option>`
-      + users.map(u => `<option value="${u.systemuserid}">`
-        + `${escapeHtml(u.fullname || "(no name)")}${u.internalemailaddress ? " — " + escapeHtml(u.internalemailaddress) : ""}`
-        + `</option>`).join("");
+    userCombo.setItems([{ value: "", label: "(all users)" }].concat(users.map(u => ({
+      value: u.systemuserid,
+      label: `${u.fullname || "(no name)"}${u.internalemailaddress ? " — " + u.internalemailaddress : ""}`
+    }))));
+    $("bUserInput").placeholder = `search ${users.length} users…`;
     log(`Loaded ${users.length} users into the picker.`);
   } catch (e) { log("Could not load users: " + e.message); }
   setStatus("");
