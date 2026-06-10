@@ -14,6 +14,7 @@
   header { background: var(--charcoal); color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
   header .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
   header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .author { color: #9a9a9a; font-size: 12px; font-style: italic; }
   header #envlabel { color: #bbb; font-size: 13px; margin-left: auto; }
   header .ver { color: #8a8a8a; font-size: 12px; margin-left: 14px; padding: 2px 8px; border: 1px solid #4a4a4a; border-radius: 20px; }
   main { max-width: 1100px; margin: 0 auto; padding: 24px; }
@@ -61,9 +62,14 @@
   .reclink { color: var(--red); text-decoration: none; }
   .reclink:hover { text-decoration: underline; }
   .pager { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; flex-wrap: wrap; }
-  .pager button { padding: 5px 12px; border: 1px solid var(--line); background: #fff; border-radius: 7px; font-weight: 600; }
+  .pager button { flex: 0 0 auto; padding: 5px 12px; border: 1px solid var(--line); background: #fff; border-radius: 7px; font-weight: 600; }
   .pager button:disabled { opacity: .4; cursor: not-allowed; }
-  .pager .info { color: #555; }
+  .pager .info { flex: 1 1 auto; min-width: 140px; text-align: center; color: #555; }
+  /* Narrow screens: stack the info above full-width prev/next buttons. */
+  @media (max-width: 540px) {
+    .pager .info { order: -1; flex-basis: 100%; }
+    .pager button { flex: 1 1 0; }
+  }
   .rec.applied { opacity: .6; }
   .rec .applied-badge { color: var(--ok); font-weight: 700; }
   .rec ul { list-style: none; margin: 0; padding: 0; }
@@ -84,6 +90,7 @@
 <header>
   <span class="dot"></span>
   <h1>Dataverse Audit Restore</h1>
+  <span class="author">by Mark Christie</span>
   <span id="envlabel">resolving environment…</span>
   <span class="ver" id="verlabel" title="Tool build / Dataverse org version">v…</span>
 </header>
@@ -209,7 +216,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.2";        // tool build — bump on each deploy
+const APP_VERSION = "1.6.3";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
