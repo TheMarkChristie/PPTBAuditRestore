@@ -17,6 +17,13 @@ cutoff is discarded — it is not restored.
 
 **Always run Preview first and review before applying. There is no automatic undo.**
 
+> ⚠️ **How the restore is written:** this tool changes your data by **updating each record through
+> the Dataverse Web API** — an HTTP **`PATCH`** per record (`dataverseAPI.update` inside Toolbox; an
+> authenticated same-origin `PATCH` as a web resource). It writes the reconstructed point-in-time
+> field values straight onto the live records, field by field. There is **no Dataverse backup or
+> platform "restore" involved** — it's ordinary Web API writes, so every change is subject to your
+> plugins, business rules, and security, and each write itself **creates a new audit entry**.
+
 ### At a glance
 1. **Records & recovery point** — pick an audited table + user + date window (or paste FetchXML), and set the recovery date/time.
 2. **Run** — choose how many records (10 / 100 / 1000 / all), optionally exclude recently-reverted ones, then **Preview**.
