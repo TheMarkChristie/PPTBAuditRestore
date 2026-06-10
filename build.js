@@ -22,11 +22,11 @@ fs.mkdirSync(dist, { recursive: true });
 // 1) tool UI -> dist/index.html
 fs.copyFileSync(toolHtml, path.join(dist, "index.html"));
 
-// 2) icon + manifest + lockfile + license + readme -> dist (npm publish runs from dist)
-for (const f of ["icon.svg", "package.json", "npm-shrinkwrap.json", "LICENSE", "README.md"]) {
-  const src = path.join(root, f);
-  if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dist, f));
-}
+// 2) icon -> dist (icon is "relative to the dist root" per the manifest)
+fs.copyFileSync(path.join(root, "icon.svg"), path.join(dist, "icon.svg"));
 
+// NOTE: we publish from the package ROOT (not dist). The package.json `files` allowlist
+// includes the dist/ folder, so the published tarball CONTAINS dist/index.html + dist/icon.svg —
+// which is the layout Power Platform Toolbox expects.
 console.log("Built dist/ →", dist);
-console.log("  index.html, icon.svg, package.json, LICENSE, README.md");
+console.log("  index.html, icon.svg");
