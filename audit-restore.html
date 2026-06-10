@@ -228,7 +228,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.7.1";        // tool build — bump on each deploy
+const APP_VERSION = "1.7.2";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -236,6 +236,9 @@ let PLAN = null;          // last computed restore plan
 let TARGET = null;        // { logical, entitySet } of the table being restored
 let ESET_CACHE = {};      // logical name -> entity set name
 let ORG_BASE = "";        // absolute org URL (for record deep-links); "" = same-origin
+let LOG_COLOR = null;     // per-batch console tint (null = default gold)
+const DEFAULT_LOG_COLOR = "#ffd166";   // gold — all non-batch console output
+const BATCH_COLORS = ["#7fd1ff", "#9ae6a0", "#ff9eb5", "#c4a7ff", "#7ee8d3", "#f3a0ff"];  // no gold
 
 // ---------- environment bootstrap ----------
 (function initEnv() {
@@ -283,10 +286,13 @@ function pickOrgUrl(c) {
 }
 
 const $ = id => document.getElementById(id);
-function log(msg, cls) {
+function log(msg, color) {
   const el = $("log");
   const t = new Date().toISOString().substr(11, 8);
-  el.textContent += `[${t}] ${msg}\n`;
+  const span = document.createElement("span");
+  span.textContent = `[${t}] ${msg}\n`;
+  span.style.color = color || LOG_COLOR || DEFAULT_LOG_COLOR;   // non-batch lines are gold
+  el.appendChild(span);
   el.scrollTop = el.scrollHeight;
 }
 function setStatus(s) { $("status").textContent = s; }
@@ -935,6 +941,7 @@ async function runAllInBatches() {
     const t0 = performance.now();
     for (let b = 0; b < batches; b++) {
       const bn = b + 1;
+      LOG_COLOR = BATCH_COLORS[b % BATCH_COLORS.length];   // tint this batch's console output
       const chunk = ordered.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
       log(`━━ Batch ${bn}/${batches} — ${chunk.length} record(s) (rows ${b * BATCH_SIZE + 1}–${b * BATCH_SIZE + chunk.length}) ━━`);
 
@@ -967,13 +974,15 @@ async function runAllInBatches() {
       log(`  [${bn}] batch ${bn}/${batches} done · total restored ${totalApplied}/${total}`
         + ` · elapsed ${elapsed.toFixed(0)}s · ~${eta.toFixed(0)}s remaining.`);
     }
+    LOG_COLOR = null;   // back to default colour for the summary line
     setStatus(`Batch run complete — ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""} across ${batches} batch(es).`);
     log(`Done. ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""} of ${total} record(s).`);
     notify(`Batch restore done — ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""}`, totalErrors ? "warning" : "success", 6000);
   } catch (e) {
+    LOG_COLOR = null;
     log("ERROR: " + e.message); setStatus("Error — see log."); console.error(e);
     notify("Batch restore failed: " + e.message, "error", 6000);
-  } finally { lockButtons(false); }
+  } finally { LOG_COLOR = null; lockButtons(false); }
 }
 
 function lockButtons(busy) {
