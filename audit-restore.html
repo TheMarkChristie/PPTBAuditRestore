@@ -97,11 +97,8 @@
 
 <main>
   <div class="banner">
-    <b>What this does:</b> for every record returned by your FetchXML, it <b>rolls back every change
-    made after the date/time you specify</b>, restoring each field to the value it held as of that moment.
-    Anything dated past your cutoff is discarded — it is not restored. (Mechanically: it takes the
-    <i>earliest</i> audit entry on-or-after your date; that entry's "before" snapshot is the state at your date.)
-    <b>Always run Preview first</b> and review before applying. There is no automatic undo.
+    <b>⚠ Always run Preview first</b> and review the before → after changes before applying — there is no automatic undo.
+    See the README for how point-in-time restore works.
   </div>
 
   <div class="card">
@@ -216,7 +213,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.6";        // tool build — bump on each deploy
+const APP_VERSION = "1.6.7";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
