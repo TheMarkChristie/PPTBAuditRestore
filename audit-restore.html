@@ -216,7 +216,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.5";        // tool build — bump on each deploy
+const APP_VERSION = "1.6.6";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -233,12 +233,17 @@ let ORG_BASE = "";        // absolute org URL (for record deep-links); "" = same
 
   // Power Platform Toolbox: read the active connection (auth + instance handled by the host).
   if (typeof window !== "undefined" && window.toolboxAPI && window.toolboxAPI.connections) {
-    el.textContent = "connecting…";
-    window.toolboxAPI.connections.getActiveConnection().then(c => {
-      if (!c) { el.textContent = "no connection — pick one in Toolbox"; return; }
-      ORG_BASE = pickOrgUrl(c);
-      el.textContent = (c.name || c.environment || "connected") + (ORG_BASE ? "" : "");
-    }).catch(() => { el.textContent = "connection error"; });
+    el.textContent = "connected";   // Dataverse calls go through the host; default to "connected"
+    try {
+      Promise.resolve(window.toolboxAPI.connections.getActiveConnection())
+        .then(c => {
+          if (!c) return;            // keep "connected"; the API still works via the host
+          ORG_BASE = pickOrgUrl(c);
+          const name = c.name || c.environmentName || c.friendlyName || c.environment || c.url;
+          if (name) el.textContent = String(name).replace(/^https:\/\//, "");
+        })
+        .catch(() => { /* leave "connected" — Dataverse access is fine */ });
+    } catch (e) { /* getActiveConnection unavailable — leave "connected" */ }
     // Re-run when the user switches connection.
     try {
       window.toolboxAPI.events.on((e, payload) => {

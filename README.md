@@ -1,8 +1,26 @@
 # Audit Restore — Power Platform Toolbox tool
 
+*by Mark Christie*
+
 Restore Dataverse records to their field state at a point in time, sourced from the **audit log**.
 Find the affected records by table / user / date window, preview the exact **before → after**
 changes, then apply them in pages of 100.
+
+## What this does
+
+For every record returned by your FetchXML, it **rolls back every change made after the date/time
+you specify**, restoring each field to the value it held as of that moment. Anything dated past your
+cutoff is discarded — it is not restored.
+
+> Mechanically: it takes the **earliest audit entry on-or-after your date**; that entry's "before"
+> snapshot is the state at your date.
+
+**Always run Preview first and review before applying. There is no automatic undo.**
+
+### At a glance
+1. **Records & recovery point** — pick an audited table + user + date window (or paste FetchXML), and set the recovery date/time.
+2. **Run** — choose how many records (10 / 100 / 1000 / all), optionally exclude recently-reverted ones, then **Preview**.
+3. **Review** the before → after list (paged 100 at a time), then **Apply this page** or **Apply all**.
 
 This is the [Power Platform Toolbox](https://docs.powerplatformtoolbox.com/tool-development)
 packaging of the single-file `audit-restore.html`. The same file also runs as a Dataverse
