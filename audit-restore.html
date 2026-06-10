@@ -216,7 +216,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.4";        // tool build — bump on each deploy
+const APP_VERSION = "1.6.5";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -955,17 +955,18 @@ let builderLoaded = false;
 async function populateBuilderLists() {
   if (builderLoaded) return;
   builderLoaded = true;
-  // Tables — every table in the org, sorted by display name.
+  // Tables — only those with auditing enabled, sorted by display name.
   try {
-    setStatus("Loading tables…");
-    const td = await apiGet(`${baseUrl()}/EntityDefinitions?$select=LogicalName,DisplayName`);
+    setStatus("Loading audited tables…");
+    const td = await apiGet(`${baseUrl()}/EntityDefinitions?$select=LogicalName,DisplayName`
+      + `&$filter=${encodeURIComponent("IsAuditEnabled/Value eq true")}`);
     const tables = (td.value || []).map(e => ({
       ln: e.LogicalName,
       dn: (e.DisplayName && e.DisplayName.UserLocalizedLabel && e.DisplayName.UserLocalizedLabel.Label) || e.LogicalName
     })).sort((a, b) => a.dn.localeCompare(b.dn));
-    $("bTable").innerHTML = `<option value="">— choose a table —</option>`
+    $("bTable").innerHTML = `<option value="">— choose an audited table —</option>`
       + tables.map(t => `<option value="${t.ln}">${escapeHtml(t.dn)} (${t.ln})</option>`).join("");
-    log(`Loaded ${tables.length} tables into the picker.`);
+    log(`Loaded ${tables.length} audited tables into the picker.`);
   } catch (e) { log("Could not load tables: " + e.message); builderLoaded = false; }
   // Users — active (enabled) users, sorted by name.
   try {
