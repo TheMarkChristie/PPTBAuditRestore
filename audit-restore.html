@@ -200,6 +200,7 @@
       <button type="button" class="primary" id="previewBtn">Preview (dry run)</button>
       <button type="button" class="danger" id="applyBtn" disabled>Apply this page</button>
       <button type="button" class="danger" id="applyAllBtn" disabled>Apply all</button>
+      <button type="button" class="danger" id="batchBtn">Restore all in batches of 1000</button>
       <button type="button" class="ghost" id="exportBtn" disabled>Download plan (JSON)</button>
       <span id="status"></span>
     </div>
@@ -227,7 +228,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.9";        // tool build — bump on each deploy
+const APP_VERSION = "1.7.0";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -873,11 +874,88 @@ async function doApply(rids, label) {
   } finally { lockButtons(false); }
 }
 
+// Process the ENTIRE matched set in chunks of 1000: find all → then per chunk
+// scan audits → reconstruct → apply, looping until done. No per-batch preview.
+const BATCH_SIZE = 1000;
+async function runAllInBatches() {
+  try {
+    const fetchXml = $("fetch").value.trim();
+    if (!fetchXml) throw new Error("Paste or generate FetchXML first.");
+    const cutoffIso = resolveCutoffIso();
+    const allowList = $("cols").value.split(",").map(s => s.trim()).filter(Boolean);
+    const { logicalName } = parseFetch(fetchXml);
+    const excludeHours = parseInt($("excludeHours").value, 10) || 0;
+
+    lockButtons(true);
+    $("log").textContent = ""; $("summary").innerHTML = ""; $("resultsCard").style.display = "none";
+    log(`Recovery point (UTC): ${cutoffIso}  |  Batch mode: ${BATCH_SIZE}/batch`
+      + (excludeHours ? `  |  Exclude changed < ${excludeHours}h` : ""));
+
+    // 1) Resolve target + the FULL ordered list of affected records.
+    let ids, targetLogical, meta;
+    setStatus("Finding all affected records…");
+    if (logicalName === "audit") {
+      const found = await fetchAffectedRecords(fetchXml, null);
+      ids = found.ids; targetLogical = found.targetLogical;
+      if (!targetLogical) throw new Error("Could not infer the target table from the audit query.");
+      meta = await getEntityMeta(targetLogical);
+    } else {
+      targetLogical = logicalName;
+      meta = await getEntityMeta(logicalName);
+      ids = await fetchRecordIds(fetchXml, meta.primaryId, null);
+    }
+    let ordered = [...ids];
+    if (excludeHours > 0) {
+      const thresholdIso = new Date(Date.now() - excludeHours * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+      setStatus("Excluding recently changed records…");
+      const excluded = await excludeRecentlyModified(ordered, meta, thresholdIso);
+      ordered = ordered.filter(id => !excluded.has(id));
+    }
+    TARGET = { logical: targetLogical, entitySet: meta.entitySet };
+
+    const total = ordered.length;
+    if (!total) { setStatus("Nothing to process."); log("No records to process."); return; }
+    const batches = Math.ceil(total / BATCH_SIZE);
+    if (!confirm(`Restore ${total} record(s) in ${batches} batch(es) of up to ${BATCH_SIZE}, applying each batch as it completes?\n\nWrites to ${$("envlabel").textContent} via the Web API. No per-batch preview, and there is no automatic undo.`)) {
+      log("Batch run cancelled."); setStatus("Cancelled."); return;
+    }
+
+    // 2) Process each chunk: scan → reconstruct → apply.
+    let totalApplied = 0, totalErrors = 0, totalChanged = 0;
+    for (let b = 0; b < batches; b++) {
+      const chunk = ordered.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+      log(`— Batch ${b + 1}/${batches}: ${chunk.length} record(s) —`);
+      setStatus(`Batch ${b + 1}/${batches}: scanning audit log…`);
+      const audits = await fetchAudits(new Set(chunk), targetLogical, cutoffIso);
+      setStatus(`Batch ${b + 1}/${batches}: restoring values…`);
+      const plan = await reconstruct(audits, allowList);
+      // wire the page view to this batch so the user can see what's happening
+      PLAN = plan; planRecs = Object.keys(plan); applied = new Set(); curPage = 0;
+      render(plan, cutoffIso);
+      const rids = planRecs.filter(r => Object.keys(plan[r].patch).length);
+      totalChanged += rids.length;
+      if (!rids.length) { log(`  batch ${b + 1}: no writable changes.`); continue; }
+      setStatus(`Batch ${b + 1}/${batches}: applying ${rids.length}…`);
+      const res = await applyRecords(rids);
+      res.ok.forEach(r => applied.add(r)); renderPage();
+      totalApplied += res.done; totalErrors += res.errors;
+      log(`  batch ${b + 1}: ${res.done} restored${res.errors ? `, ${res.errors} error(s)` : ""}. Running total ${totalApplied}/${total}.`);
+    }
+    setStatus(`Batch run complete — ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""} across ${batches} batch(es).`);
+    log(`Done. ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""} of ${total} record(s).`);
+    notify(`Batch restore done — ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""}`, totalErrors ? "warning" : "success", 6000);
+  } catch (e) {
+    log("ERROR: " + e.message); setStatus("Error — see log."); console.error(e);
+    notify("Batch restore failed: " + e.message, "error", 6000);
+  } finally { lockButtons(false); }
+}
+
 function lockButtons(busy) {
   const noPlan = !PLAN || !Object.keys(PLAN || {}).length;
   $("previewBtn").disabled = busy;
   $("applyBtn").disabled = busy || noPlan;
   $("applyAllBtn").disabled = busy || noPlan;
+  $("batchBtn").disabled = busy;
   $("prevBtn").disabled = busy || curPage === 0;
   $("nextBtn").disabled = busy || curPage >= Math.ceil(planRecs.length / PAGE_SIZE) - 1;
 }
@@ -895,6 +973,7 @@ function exportPlan() {
 $("previewBtn").addEventListener("click", runPreview);
 $("applyBtn").addEventListener("click", applyThisPage);
 $("applyAllBtn").addEventListener("click", applyAll);
+$("batchBtn").addEventListener("click", runAllInBatches);
 $("exportBtn").addEventListener("click", exportPlan);
 $("prevBtn").addEventListener("click", () => { if (curPage > 0) { curPage--; renderPage(); } });
 $("nextBtn").addEventListener("click", () => {
