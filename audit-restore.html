@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dataverse Audit Restore</title>
+<style>
+  :root {
+    --red: #EE163B; --charcoal: #2B2B2B; --ink: #1c1c1c;
+    --line: #e3e3e3; --bg: #f5f6f8; --ok: #1a7f37; --warn: #b35900; --err: #c4314b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); color: var(--ink); }
+  header { background: var(--charcoal); color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header #envlabel { color: #bbb; font-size: 13px; margin-left: auto; }
+  header .ver { color: #8a8a8a; font-size: 12px; margin-left: 14px; padding: 2px 8px; border: 1px solid #4a4a4a; border-radius: 20px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 18px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: #666; margin: 0 0 14px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  input[type=text], input[type=datetime-local], input[type=number], textarea, select {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px; font-family: inherit;
+  }
+  textarea { min-height: 180px; font-family: 'Cascadia Code', Consolas, monospace; resize: vertical; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  .row > div.narrow { flex: 0 0 240px; }
+  #status { font-size: 13px; color: #666; }
+  #tablewrap { display: none; }
+  .hint { font-size: 12px; color: #777; margin-top: 4px; }
+  .btnbar { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
+  button { padding: 10px 18px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .primary { background: var(--charcoal); color: #fff; }
+  .danger { background: var(--red); color: #fff; }
+  .ghost { background: #eee; color: #333; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .pill.ok { background: #e6f4ea; color: var(--ok); }
+  .pill.warn { background: #fff3e0; color: var(--warn); }
+  #log { background: #1e1e1e; color: #d4d4d4; font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px;
+         border-radius: 8px; padding: 12px; height: 200px; overflow: auto; white-space: pre-wrap; }
+  #summary { display: flex; gap: 24px; flex-wrap: wrap; margin: 8px 0 16px; }
+  #summary .stat { background: #fafafa; border: 1px solid var(--line); border-radius: 8px; padding: 12px 18px; }
+  #summary .stat b { display: block; font-size: 24px; color: var(--charcoal); }
+  #summary .stat small { color: #777; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #fafafa; position: sticky; top: 0; }
+  .tablewrap { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 4px; }
+  .flag { color: var(--warn); font-size: 11px; }
+  .viewtoggle { display: flex; gap: 6px; margin-bottom: 12px; }
+  .viewtoggle button { padding: 6px 14px; border: 1px solid var(--line); background: #fff; border-radius: 7px; font-weight: 600; }
+  .viewtoggle button.active { background: var(--charcoal); color: #fff; border-color: var(--charcoal); }
+  #listview { max-height: 560px; overflow: auto; }
+  .rec { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; padding: 12px 14px; }
+  .rec .recid { font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; color: #555; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; }
+  .rec .recid .count { color: var(--charcoal); font-weight: 700; white-space: nowrap; }
+  .reclink { color: var(--red); text-decoration: none; }
+  .reclink:hover { text-decoration: underline; }
+  .pager { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; flex-wrap: wrap; }
+  .pager button { padding: 5px 12px; border: 1px solid var(--line); background: #fff; border-radius: 7px; font-weight: 600; }
+  .pager button:disabled { opacity: .4; cursor: not-allowed; }
+  .pager .info { color: #555; }
+  .rec.applied { opacity: .6; }
+  .rec .applied-badge { color: var(--ok); font-weight: 700; }
+  .rec ul { list-style: none; margin: 0; padding: 0; }
+  .rec li { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-top: 1px dashed #eee; font-size: 13px; flex-wrap: wrap; }
+  .rec li:first-child { border-top: 0; }
+  .rec .fname { font-family: 'Cascadia Code', Consolas, monospace; font-weight: 600; min-width: 190px; }
+  .rec .cur { color: var(--err); text-decoration: line-through; }
+  .rec .arrow { color: #999; }
+  .rec .rest { color: var(--ok); font-weight: 600; }
+  .rec .flags { margin-top: 8px; }
+  .banner { border-left: 4px solid var(--red); background: #fff5f6; padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+  .builderbox { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; background: #f7f9fc; }
+  .builderbox summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--charcoal); }
+  .builderbox[open] summary { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot"></span>
+  <h1>Dataverse Audit Restore</h1>
+  <span id="envlabel">resolving environment…</span>
+  <span class="ver" id="verlabel" title="Tool build / Dataverse org version">v…</span>
+</header>
+
+<main>
+  <div class="banner">
+    <b>What this does:</b> for every record returned by your FetchXML, it <b>rolls back every change
+    made after the date/time you specify</b>, restoring each field to the value it held as of that moment.
+    Anything dated past your cutoff is discarded — it is not restored. (Mechanically: it takes the
+    <i>earliest</i> audit entry on-or-after your date; that entry's "before" snapshot is the state at your date.)
+    <b>Always run Preview first</b> and review before applying. There is no automatic undo.
+  </div>
+
+  <div class="card">
+    <h2>1 · Records &amp; recovery point</h2>
+    <details id="builder" class="builderbox">
+      <summary>⚙ Build FetchXML from audit history — find records changed in a date window</summary>
+      <div class="row">
+        <div>
+          <label for="bTable">Table (logical name)</label>
+          <input type="text" id="bTable" placeholder="prx3_job" title="Table logical name" />
+        </div>
+        <div>
+          <label for="bUser">Changed by <span style="font-weight:400;color:#999">(name, email or GUID — optional)</span></label>
+          <input type="text" id="bUser" placeholder="all users" title="Changed by user" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="bStart">Changed from (start)</label>
+          <input type="datetime-local" id="bStart" step="1" title="Window start" />
+        </div>
+        <div>
+          <label for="bEnd">Changed to (end)</label>
+          <input type="datetime-local" id="bEnd" step="1" title="Window end" />
+        </div>
+        <div>
+          <label for="bTz">Time zone</label>
+          <select id="bTz" title="Builder time zone">
+            <option value="local">Browser local</option>
+            <option value="utc">UTC</option>
+          </select>
+        </div>
+      </div>
+      <div class="btnbar">
+        <button type="button" class="ghost" id="genBtn">Generate FetchXML →</button>
+        <span class="hint" id="genHint">Fills the box below and sets the recovery point to the <b>start</b> date.
+          The end date only limits which records are found.</span>
+      </div>
+    </details>
+
+    <label>FetchXML <span style="font-weight:400;color:#999">(selects the records to restore)</span></label>
+    <textarea id="fetch" placeholder="&lt;fetch&gt;&#10;  &lt;entity name=&quot;prx3_job&quot;&gt;&#10;    &lt;attribute name=&quot;prx3_jobid&quot; /&gt;&#10;    &lt;filter&gt; ... &lt;/filter&gt;&#10;  &lt;/entity&gt;&#10;&lt;/fetch&gt;"></textarea>
+    <div class="hint">The entity name is read from the fetch. Only the primary-key column is needed; extra columns are ignored.</div>
+    <div class="row">
+      <div>
+        <label for="cutoff">Recovery date &amp; time</label>
+        <input type="datetime-local" id="cutoff" step="1" title="Recovery date and time" />
+      </div>
+      <div>
+        <label for="tz">Time zone of that value</label>
+        <select id="tz" title="Time zone of the recovery value">
+          <option value="local">Browser local time</option>
+          <option value="utc">UTC</option>
+        </select>
+        <div class="hint" id="utcEcho">&nbsp;</div>
+      </div>
+      <div>
+        <label>Restrict to columns <span style="font-weight:400;color:#999">(optional)</span></label>
+        <input type="text" id="cols" placeholder="e.g. prx3_status, prx3_value (blank = all audited)" />
+        <div class="hint">Comma-separated allow-list. Blank reverts every audited field.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Run</h2>
+    <div class="row">
+      <div class="narrow">
+        <label for="scope">Process how many records?</label>
+        <select id="scope" title="How many of the matched records to preview and restore">
+          <option value="10">First 10</option>
+          <option value="100">First 100</option>
+          <option value="1000">First 1000</option>
+          <option value="all">All matched</option>
+        </select>
+        <div class="hint">Total to reconstruct. The preview then pages 100 at a time.</div>
+      </div>
+      <div class="narrow">
+        <label for="excludeHours">Exclude recently reverted</label>
+        <input type="number" id="excludeHours" min="0" step="1" value="0" title="Skip records changed within this many hours" />
+        <div class="hint">Skip records already changed within the last N hours (0 = don't exclude).</div>
+      </div>
+    </div>
+    <div class="btnbar">
+      <button type="button" class="primary" id="previewBtn">Preview (dry run)</button>
+      <button type="button" class="danger" id="applyBtn" disabled>Apply this page</button>
+      <button type="button" class="danger" id="applyAllBtn" disabled>Apply all</button>
+      <button type="button" class="ghost" id="exportBtn" disabled>Download plan (JSON)</button>
+      <span id="status"></span>
+    </div>
+    <div id="summary"></div>
+    <div id="log"></div>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none">
+    <h2>Proposed changes — before → after</h2>
+    <div class="viewtoggle">
+      <button type="button" id="listBtn" class="active">List view</button>
+      <button type="button" id="tableBtn">Table view</button>
+    </div>
+    <div class="pager">
+      <button type="button" id="prevBtn">‹ Prev</button>
+      <span class="info" id="pageInfo"></span>
+      <button type="button" id="nextBtn">Next ›</button>
+    </div>
+    <div id="listview"></div>
+    <div class="tablewrap" id="tablewrap"><table id="results"><thead>
+      <tr><th>Record</th><th>Field</th><th>Was (current)</th><th>Will be (restored)</th><th>Notes</th></tr>
+    </thead><tbody></tbody></table></div>
+  </div>
+</main>
+
+<script>
+"use strict";
+const APP_VERSION = "1.6.1";        // tool build — bump on each deploy
+const BUILD_DATE = "2026-06-10";
+const API_VER = "v9.2";
+let ORG_VERSION = null;             // Dataverse org version, resolved on load
+let PLAN = null;          // last computed restore plan
+let TARGET = null;        // { logical, entitySet } of the table being restored
+let ESET_CACHE = {};      // logical name -> entity set name
+let ORG_BASE = "";        // absolute org URL (for record deep-links); "" = same-origin
+
+// ---------- environment bootstrap ----------
+(function initEnv() {
+  const vl = document.getElementById("verlabel");
+  const el = document.getElementById("envlabel");
+  if (vl) vl.textContent = "v" + APP_VERSION;
+
+  // Power Platform Toolbox: read the active connection (auth + instance handled by the host).
+  if (typeof window !== "undefined" && window.toolboxAPI && window.toolboxAPI.connections) {
+    el.textContent = "connecting…";
+    window.toolboxAPI.connections.getActiveConnection().then(c => {
+      if (!c) { el.textContent = "no connection — pick one in Toolbox"; return; }
+      ORG_BASE = pickOrgUrl(c);
+      el.textContent = (c.name || c.environment || "connected") + (ORG_BASE ? "" : "");
+    }).catch(() => { el.textContent = "connection error"; });
+    // Re-run when the user switches connection.
+    try {
+      window.toolboxAPI.events.on((e, payload) => {
+        if (payload && payload.event === "connection:updated") location.reload();
+      });
+    } catch (e) {}
+    return;
+  }
+
+  // Dataverse web resource: detect the client URL from the host app.
+  let url = "";
+  try {
+    if (window.parent && window.parent.Xrm) url = window.parent.Xrm.Utility.getGlobalContext().getClientUrl();
+    else if (window.Xrm) url = window.Xrm.Utility.getGlobalContext().getClientUrl();
+  } catch (e) { /* not in app */ }
+  ORG_BASE = url || "";
+  el.textContent = url ? url.replace("https://", "") : "same-origin";
+})();
+
+// Find a dynamics URL on the connection object (field name varies across Toolbox versions).
+function pickOrgUrl(c) {
+  const cands = [c.url, c.environmentUrl, c.instanceUrl, c.apiUrl, c.resourceUrl, c.environment];
+  for (const v of cands) if (typeof v === "string" && /^https:\/\/.+\.dynamics\.com/i.test(v)) return v.replace(/\/+$/, "");
+  return "";
+}
+
+const $ = id => document.getElementById(id);
+function log(msg, cls) {
+  const el = $("log");
+  const t = new Date().toISOString().substr(11, 8);
+  el.textContent += `[${t}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+function setStatus(s) { $("status").textContent = s; }
+// Toast via the Toolbox host when available (no-op as a web resource).
+function notify(title, type, duration) {
+  try {
+    if (typeof window !== "undefined" && window.toolboxAPI && window.toolboxAPI.utils) {
+      window.toolboxAPI.utils.showNotification({ title, type: type || "info", duration: duration || 4000 });
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// echo the resolved UTC cutoff as the user edits
+function refreshUtcEcho() {
+  try {
+    const iso = resolveCutoffIso();
+    $("utcEcho").textContent = "→ " + iso + " (UTC)";
+  } catch (e) { $("utcEcho").textContent = " "; }
+}
+$("cutoff").addEventListener("input", refreshUtcEcho);
+$("tz").addEventListener("change", refreshUtcEcho);
+
+function resolveCutoffIso() {
+  const raw = $("cutoff").value;            // "2026-06-01T09:00:00"
+  if (!raw) throw new Error("Set a recovery date & time.");
+  if ($("tz").value === "utc") {
+    return raw.length === 16 ? raw + ":00Z" : raw + "Z";
+  }
+  // interpret as browser-local, convert to UTC
+  return new Date(raw).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+// ---------- Web API plumbing ----------
+// Dual-mode: inside Power Platform Toolbox, window.dataverseAPI is injected and handles
+// auth/instance routing. As a Dataverse web resource, fall back to same-origin fetch.
+const PPTB = (typeof window !== "undefined") && !!window.dataverseAPI;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function baseUrl() {
+  return `/api/data/${API_VER}`;   // only used to build relative paths; PPTB strips this off
+}
+function headers(extra) {
+  const h = {
+    "Accept": "application/json",
+    "OData-MaxVersion": "4.0",
+    "OData-Version": "4.0",
+    "Content-Type": "application/json; charset=utf-8",
+  };
+  return Object.assign(h, extra || {});
+}
+
+// Normalise any URL/path we build into a relative Web API path (entityset?query or function()).
+function toRelPath(url) {
+  let p = url;
+  const m = p.match(/\/api\/data\/v9\.\d+\/(.*)$/);   // strip absolute base (e.g. an @odata.nextLink)
+  if (m) p = m[1];
+  return p.replace(/^\//, "");
+}
+
+async function apiGet(url, extraHeaders) {
+  if (PPTB) {
+    const p = toRelPath(url);
+    const fx = p.match(/[?&]fetchXml=([^&]*)/i);          // route FetchXML through the dedicated method
+    if (fx) return await window.dataverseAPI.fetchXmlQuery(decodeURIComponent(fx[1]));
+    return await window.dataverseAPI.queryData(p);
+  }
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const r = await fetch(url, { method: "GET", headers: headers(extraHeaders), credentials: "same-origin" });
+    if (r.status === 429 || r.status === 503) {
+      const wait = parseInt(r.headers.get("Retry-After") || (2 ** attempt), 10);
+      log(`  throttled, waiting ${wait}s`); await sleep(wait * 1000); continue;
+    }
+    if (!r.ok) throw new Error(`GET ${r.status}: ${(await r.text()).slice(0, 400)}`);
+    return r.json();
+  }
+  throw new Error("GET failed after retries");
+}
+
+// ---------- metadata ----------
+async function getEntityMeta(logicalName) {
+  const url = `${baseUrl()}/EntityDefinitions(LogicalName='${logicalName}')?$select=EntitySetName,PrimaryIdAttribute`;
+  const d = await apiGet(url);
+  ESET_CACHE[logicalName] = d.EntitySetName;
+  return { entitySet: d.EntitySetName, primaryId: d.PrimaryIdAttribute };
+}
+async function entitySetFor(logicalName) {
+  if (ESET_CACHE[logicalName]) return ESET_CACHE[logicalName];
+  const d = await apiGet(`${baseUrl()}/EntityDefinitions(LogicalName='${logicalName}')?$select=EntitySetName`);
+  ESET_CACHE[logicalName] = d.EntitySetName;
+  return d.EntitySetName;
+}
+
+// ---------- 1. fetch record ids (paged) ----------
+function parseFetch(fetchXml) {
+  const doc = new DOMParser().parseFromString(fetchXml, "application/xml");
+  if (doc.querySelector("parsererror")) throw new Error("FetchXML is not valid XML.");
+  const entity = doc.querySelector("entity");
+  if (!entity) throw new Error("FetchXML has no <entity> element.");
+  return { doc, entity, logicalName: entity.getAttribute("name") };
+}
+
+async function fetchRecordIds(fetchXml, primaryId, limit) {
+  const { doc, fetchEl } = (() => {
+    const d = new DOMParser().parseFromString(fetchXml, "application/xml");
+    return { doc: d, fetchEl: d.querySelector("fetch") };
+  })();
+  fetchEl.setAttribute("count", String(limit ? Math.min(5000, limit) : 5000));
+  const ids = new Set();
+  let page = 1, cookie = null, done = false;
+  const ser = new XMLSerializer();
+  while (!done) {
+    fetchEl.setAttribute("page", String(page));
+    if (cookie) fetchEl.setAttribute("paging-cookie", cookie);
+    else fetchEl.removeAttribute("paging-cookie");
+    const xml = ser.serializeToString(doc);
+    const eset = await entitySetFor(parseFetch(fetchXml).logicalName);
+    const url = `${baseUrl()}/${eset}?fetchXml=${encodeURIComponent(xml)}`;
+    const data = await apiGet(url);
+    for (const row of data.value) if (row[primaryId]) ids.add(row[primaryId].toLowerCase());
+    log(`  fetch page ${page}: ${data.value.length} rows (total ${ids.size})`);
+    if (limit && ids.size >= limit) break;                  // stop once we have enough
+    const ck = data["@Microsoft.Dynamics.CRM.fetchxmlpagingcookie"];
+    if (!ck) break;                                         // cookie present only when more pages exist
+    cookie = extractCookie(ck);
+    page++;
+  }
+  return ids;
+}
+function extractCookie(raw) {
+  // raw = url-encoded <cookie ...><id last=".." first=".." /></cookie>
+  const decoded = decodeURIComponent(decodeURIComponent(raw));
+  const m = decoded.match(/pagingcookie="(.*?)"/);
+  if (m) return decodeURIComponent(m[1]);
+  // fallback: inner content of <cookie>
+  const inner = decoded.replace(/^<cookie[^>]*>/, "").replace(/<\/cookie>$/, "");
+  return inner;
+}
+
+// The audit table only supports a narrow set of FetchXML queries, so we translate the
+// builder's conditions into an OData $filter on the `audits` set (the supported path) and
+// collect the distinct objectid (the changed records) + infer the target table.
+async function fetchAffectedRecords(fetchXml, limit) {
+  const doc = new DOMParser().parseFromString(fetchXml, "application/xml");
+  const conds = [...doc.querySelectorAll("condition")];
+  const parts = [];
+  for (const c of conds) {
+    const p = await translateCond(c.getAttribute("attribute"), c.getAttribute("operator"), c.getAttribute("value"));
+    if (p) parts.push(p);
+  }
+  if (!parts.length) throw new Error("The audit query has no usable conditions.");
+  const filter = parts.join(" and ");
+  log(`  audit OData filter: ${filter}`);
+
+  const pageSize = limit ? Math.min(5000, Math.max(limit * 3, 100)) : 5000;
+  let url = `${baseUrl()}/audits?$select=_objectid_value,createdon&$filter=${encodeURIComponent(filter)}&$orderby=createdon asc`;
+  const ids = new Set();
+  let targetLogical = null, done = false;
+  while (url && !done) {
+    const data = await apiGet(url, { "Prefer": `odata.include-annotations="*",odata.maxpagesize=${pageSize}` });
+    for (const row of data.value) {
+      const oid = row["_objectid_value"];
+      if (oid) {
+        ids.add(oid.toLowerCase());
+        if (!targetLogical) targetLogical = row["_objectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] || null;
+        if (limit && ids.size >= limit) { done = true; break; }   // stop once we have the first N
+      }
+    }
+    log(`  audit query: distinct records ${ids.size}${limit ? ` (target ${limit})` : ""}`);
+    url = done ? null : (data["@odata.nextLink"] || null);
+  }
+  return { ids, targetLogical };
+}
+
+// Resolve a numeric entity type code back to its logical name (for pasted fetches).
+const _etcCache = {};
+async function logicalFromEtc(etc) {
+  if (_etcCache[etc]) return _etcCache[etc];
+  const d = await apiGet(`${baseUrl()}/EntityDefinitions?$select=LogicalName&$filter=ObjectTypeCode eq ${etc}`);
+  const ln = (d.value && d.value[0] && d.value[0].LogicalName) || null;
+  if (ln) _etcCache[etc] = ln;
+  return ln;
+}
+
+// Map one FetchXML condition to an OData clause against the audits set.
+async function translateCond(attr, op, val) {
+  const OPS = { eq: "eq", ne: "ne", gt: "gt", lt: "lt", ge: "ge", le: "le",
+                "on-or-after": "ge", "on-or-before": "le", after: "gt", before: "lt" };
+  const o = OPS[op];
+  if (!o) { log(`  (skipped unsupported audit condition: ${attr} ${op})`); return null; }
+  if (attr === "objecttypecode") {
+    let name = val;
+    if (/^\d+$/.test(val)) name = (await logicalFromEtc(val)) || val;   // int → logical
+    return `objecttypecode ${o} '${String(name).replace(/'/g, "''")}'`;
+  }
+  if (attr === "operation") return `operation ${o} ${val}`;             // int choice
+  if (attr === "createdon") return `createdon ${o} ${val}`;            // datetime literal
+  if (attr === "userid") return `_userid_value ${o} ${val}`;          // guid lookup
+  if (attr === "callinguserid") return `_callinguserid_value ${o} ${val}`;
+  const lit = /^\d+$/.test(val) ? val : `'${String(val).replace(/'/g, "''")}'`;
+  return `${attr} ${o} ${lit}`;
+}
+
+// ---------- 2. audits since cutoff ----------
+// Query the audit log for ONLY the selected records (chunked by objectid), not the whole table.
+async function fetchAudits(ids, logicalName, cutoffIso) {
+  const list = [...ids];
+  const byRecord = {};
+  const CHUNK = 20;                       // record-ids per request (keeps URL length safe)
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const chunk = list.slice(i, i + CHUNK);
+    const idFilter = chunk.map(id => `_objectid_value eq ${id}`).join(" or ");
+    const flt = `operation eq 2 and createdon ge ${cutoffIso} and (${idFilter})`;
+    let url = `${baseUrl()}/audits?$select=auditid,createdon,_objectid_value,operation`
+            + `&$filter=${encodeURIComponent(flt)}&$orderby=createdon asc`;
+    while (url) {
+      const data = await apiGet(url, { "Prefer": "odata.maxpagesize=5000" });
+      for (const a of data.value) {
+        const rid = (a["_objectid_value"] || "").toLowerCase();
+        (byRecord[rid] = byRecord[rid] || []).push({ auditid: a.auditid, createdon: a.createdon });
+      }
+      url = data["@odata.nextLink"] || null;
+    }
+    log(`  audit scan: ${Math.min(i + CHUNK, list.length)}/${list.length} records checked, ${Object.keys(byRecord).length} with changes`);
+  }
+  for (const k in byRecord) byRecord[k].sort((x, y) => x.createdon.localeCompare(y.createdon));
+  return byRecord;
+}
+
+// Return the set of candidate ids whose record was modified on/after the threshold
+// (i.e. recently changed / already reverted) — these are excluded from processing.
+async function excludeRecentlyModified(candidateIds, meta, thresholdIso) {
+  const excluded = new Set();
+  const CHUNK = 30;
+  for (let i = 0; i < candidateIds.length; i += CHUNK) {
+    const chunk = candidateIds.slice(i, i + CHUNK);
+    const idf = chunk.map(id => `${meta.primaryId} eq ${id}`).join(" or ");
+    const flt = `(${idf}) and modifiedon ge ${thresholdIso}`;
+    const url = `${baseUrl()}/${meta.entitySet}?$select=${meta.primaryId}&$filter=${encodeURIComponent(flt)}`;
+    const data = await apiGet(url);
+    for (const row of data.value) if (row[meta.primaryId]) excluded.add(row[meta.primaryId].toLowerCase());
+  }
+  return excluded;
+}
+
+// ---------- 3. audit detail ----------
+async function retrieveAuditDetail(auditid) {
+  const url = `${baseUrl()}/audits(${auditid})/Microsoft.Dynamics.CRM.RetrieveAuditDetails`;
+  const d = await apiGet(url, { "Prefer": 'odata.include-annotations="*"' });
+  const det = d.AuditDetail || {};
+  if ((det["@odata.type"] || "").endsWith("AttributeAuditDetail"))
+    return { old: det.OldValue || {}, new: det.NewValue || {} };
+  return { old: {}, new: {} };
+}
+
+// ---------- 4. restoring: reconstruct point-in-time values + build patch ----------
+async function reconstruct(byRecord, allowList) {
+  const plan = {};
+  const detailCache = {};
+  const recs = Object.keys(byRecord);
+  log(`   Restoring values for ${recs.length} record(s)…`);
+  for (let i = 0; i < recs.length; i++) {
+    const rid = recs[i];
+    const oldVals = {}, oldAnn = {};   // earliest post-cutoff = value at recovery point
+    const newVals = {}, newAnn = {};   // latest post-cutoff = current value now
+    for (const a of byRecord[rid]) {
+      let det = detailCache[a.auditid];
+      if (det === undefined) { det = await retrieveAuditDetail(a.auditid); detailCache[a.auditid] = det; }
+      for (const k in det.old) {                       // earliest wins (don't overwrite)
+        if (k === "@odata.type") continue;
+        if (k.indexOf("@") > -1) { if (!(k in oldAnn)) oldAnn[k] = det.old[k]; continue; }
+        if (!(k in oldVals)) oldVals[k] = det.old[k];
+      }
+      for (const k in det.new) {                       // latest wins (overwrite)
+        if (k === "@odata.type") continue;
+        if (k.indexOf("@") > -1) { newAnn[k] = det.new[k]; continue; }
+        newVals[k] = det.new[k];
+      }
+    }
+    const { patch, flags, display } = await buildPatch(oldVals, oldAnn, newVals, newAnn, allowList);
+    if (Object.keys(patch).length || flags.length) plan[rid] = { patch, flags, display };
+    if ((i + 1) % 50 === 0) { log(`  restored ${i + 1}/${recs.length}`); setStatus(`Restoring… ${i + 1}/${recs.length}`); await sleep(0); }
+  }
+  return plan;
+}
+
+async function buildPatch(oldVals, oldAnn, newVals, newAnn, allowList) {
+  const patch = {}, flags = [], display = [];
+  for (const key in oldVals) {
+    const baseName = key.replace(/^_/, "").replace(/_value$/, "");
+    if (allowList && allowList.length && !allowList.includes(key) && !allowList.includes(baseName)) continue;
+    const val = oldVals[key];
+    const current = fmt(newVals, newAnn, key);          // what it shows now
+    const restore = fmt(oldVals, oldAnn, key);          // what we'll set it back to
+
+    if (key.startsWith("_") && key.endsWith("_value")) {           // lookup
+      const ln = oldAnn[`${key}@Microsoft.Dynamics.CRM.lookuplogicalname`];
+      if (val == null || val === "" || val === "00000000-0000-0000-0000-000000000000") {
+        flags.push(`lookup '${baseName}' was empty at cutoff → manual disassociate needed`);
+        display.push({ field: baseName, current, restore, flagged: true }); continue;
+      }
+      if (!ln) { flags.push(`lookup '${baseName}' missing target type → skipped`); continue; }
+      const eset = await entitySetFor(ln);
+      patch[`${baseName}@odata.bind`] = `/${eset}(${val})`;
+      display.push({ field: baseName, current, restore });
+      continue;
+    }
+    if (typeof val === "string" && /…$|\.\.\.$/.test(val)) {       // truncated >5KB
+      flags.push(`'${key}' truncated in audit (>5KB) → NOT restored`);
+      display.push({ field: key, current, restore: restore + "  [truncated — skipped]", flagged: true }); continue;
+    }
+    patch[key] = val;
+    display.push({ field: key, current, restore });
+  }
+  return { patch, flags, display };
+}
+// Format a value for display, preferring the human-readable FormattedValue annotation.
+function fmt(obj, ann, key) {
+  if (!(key in obj)) return "—";
+  const v = obj[key];
+  const fk = `${key}@OData.Community.Display.V1.FormattedValue`;
+  if (ann[fk] !== undefined) return `${ann[fk]} (${v})`;
+  return (v === null || v === "") ? "∅ (empty)" : String(v);
+}
+
+// ---------- 5. render (paginated, 100/page) ----------
+const PAGE_SIZE = 100;
+let planRecs = [], curPage = 0, curSlice = [], applied = new Set();
+
+function render(plan, cutoffIso) {
+  const recs = Object.keys(plan);
+  let fieldCount = 0, flagged = 0;
+  for (const r of recs) { fieldCount += Object.keys(plan[r].patch).length; if (plan[r].flags.length) flagged++; }
+  $("summary").innerHTML = `
+    <div class="stat"><b>${recs.length}</b><small>records to update</small></div>
+    <div class="stat"><b>${fieldCount}</b><small>field reverts</small></div>
+    <div class="stat"><b>${flagged}</b><small>records with flags</small></div>
+    <div class="stat"><b>${cutoffIso}</b><small>recovery point (UTC)</small></div>`;
+  planRecs = recs; curPage = 0; applied = new Set();
+  $("resultsCard").style.display = recs.length ? "block" : "none";
+  renderPage();
+}
+
+function renderPage() {
+  const total = planRecs.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (curPage >= pages) curPage = pages - 1;
+  if (curPage < 0) curPage = 0;
+  const start = curPage * PAGE_SIZE, end = Math.min(start + PAGE_SIZE, total);
+  curSlice = planRecs.slice(start, end);
+  renderList(PLAN, curSlice);
+  renderTable(PLAN, curSlice);
+  $("pageInfo").textContent = total
+    ? `Page ${curPage + 1} of ${pages} · records ${start + 1}–${end} of ${total}` +
+      (applied.size ? ` · ${applied.size} applied` : "")
+    : "no records";
+  $("prevBtn").disabled = curPage === 0;
+  $("nextBtn").disabled = curPage >= pages - 1;
+  const pending = curSlice.filter(r => PLAN[r] && Object.keys(PLAN[r].patch).length && !applied.has(r)).length;
+  $("applyBtn").textContent = `Apply this page (${pending})`;
+}
+
+function renderList(plan, recs) {
+  const host = $("listview");
+  host.innerHTML = "";
+  for (const r of recs) {
+    const p = plan[r];
+    const isApplied = applied.has(r);
+    const div = document.createElement("div");
+    div.className = "rec" + (isApplied ? " applied" : "");
+    const items = p.display.map(d =>
+      `<li><span class="fname">${escapeHtml(d.field)}</span>`
+      + `<span class="cur">${escapeHtml(d.current)}</span>`
+      + `<span class="arrow">→</span>`
+      + `<span class="rest">${escapeHtml(d.restore)}</span></li>`
+    ).join("") || `<li><em>no writable fields</em></li>`;
+    const flagsHtml = p.flags.length
+      ? `<div class="flags">${p.flags.map(f => `<div class="flag">⚠ ${escapeHtml(f)}</div>`).join("")}</div>` : "";
+    const badge = isApplied ? `<span class="applied-badge">✓ applied</span> · ` : "";
+    div.innerHTML =
+      `<div class="recid">${recordLink(r)}<span class="count">${badge}${p.display.length} field${p.display.length === 1 ? "" : "s"}</span></div>`
+      + `<ul>${items}</ul>${flagsHtml}`;
+    host.appendChild(div);
+  }
+}
+
+function renderTable(plan, recs) {
+  const tb = $("results").querySelector("tbody");
+  tb.innerHTML = "";
+  for (const r of recs) {
+    const p = plan[r];
+    const rows = Math.max(p.display.length, 1);
+    const idCell = `${recordLink(r)}${applied.has(r) ? ' <span class="applied-badge">✓</span>' : ""}`;
+    if (p.display.length) {
+      p.display.forEach((d, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = (idx === 0 ? `<td rowspan="${rows}">${idCell}</td>` : "")
+          + `<td><code>${escapeHtml(d.field)}</code></td>`
+          + `<td>${escapeHtml(d.current)}</td>`
+          + `<td>${escapeHtml(d.restore)}</td>`
+          + (idx === 0 ? `<td rowspan="${rows}">${p.flags.map(f => `<div class="flag">⚠ ${escapeHtml(f)}</div>`).join("")}</td>` : "");
+        tb.appendChild(tr);
+      });
+    } else {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${idCell}</td><td colspan="3"><em>no writable fields</em></td>`
+        + `<td>${p.flags.map(f => `<div class="flag">⚠ ${escapeHtml(f)}</div>`).join("")}</td>`;
+      tb.appendChild(tr);
+    }
+  }
+}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// Deep link to a record's form. Uses the absolute org URL when known (Toolbox), else same-origin.
+function recordUrl(rid) {
+  const etn = TARGET ? TARGET.logical : "";
+  return `${ORG_BASE}/main.aspx?etn=${encodeURIComponent(etn)}&id=${encodeURIComponent(rid)}&pagetype=entityrecord`;
+}
+function recordLink(rid) {
+  return `<a class="reclink" href="${recordUrl(rid)}" target="_blank" rel="noopener" title="Open record in a new tab">${rid} ↗</a>`;
+}
+
+// ---------- 6. apply ----------
+// Independent PATCH per record via a concurrency pool — accurate per-record results,
+// no all-or-nothing changeset, and one bad record never blocks the others.
+// Returns the set of record ids that succeeded so the caller can mark them applied.
+async function applyRecords(rids) {
+  const eset = TARGET.entitySet;
+  const POOL = 8;
+  let done = 0, errors = 0, idx = 0;
+  const ok = new Set();
+  async function worker() {
+    while (idx < rids.length) {
+      const rid = rids[idx++];
+      try {
+        await patchRecord(eset, rid, PLAN[rid].patch);
+        done++; ok.add(rid);
+      } catch (e) {
+        errors++;
+        log(`  ✖ ${rid}: ${e.message}`);
+      }
+      if ((done + errors) % 10 === 0 || done + errors === rids.length)
+        setStatus(`Applied ${done}/${rids.length}` + (errors ? ` (${errors} errors)` : ""));
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(POOL, rids.length) }, worker));
+  return { done, errors, ok };
+}
+
+async function patchRecord(eset, rid, patch) {
+  if (PPTB) {
+    // dataverseAPI.update takes the entity LOGICAL name; it throws on failure.
+    await window.dataverseAPI.update(TARGET.logical, rid, patch);
+    return;
+  }
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const r = await fetch(`${baseUrl()}/${eset}(${rid})`, {
+      method: "PATCH", credentials: "same-origin",
+      headers: headers({ "If-Match": "*" }),
+      body: JSON.stringify(patch),
+    });
+    if (r.status === 429 || r.status === 503) { await sleep((2 ** attempt) * 1000); continue; }
+    if (!r.ok) {
+      let msg = `${r.status}`;
+      try { const j = JSON.parse(await r.text()); msg = j.error ? j.error.message : msg; } catch (e) {}
+      throw new Error(msg);
+    }
+    return;
+  }
+  throw new Error("failed after retries");
+}
+
+// ---------- orchestration ----------
+async function runPreview() {
+  try {
+    lockButtons(true);
+    $("log").textContent = ""; $("summary").innerHTML = ""; $("resultsCard").style.display = "none";
+    PLAN = null; $("applyBtn").disabled = true; $("exportBtn").disabled = true;
+
+    const fetchXml = $("fetch").value.trim();
+    if (!fetchXml) throw new Error("Paste your FetchXML.");
+    const cutoffIso = resolveCutoffIso();
+    const allowList = $("cols").value.split(",").map(s => s.trim()).filter(Boolean);
+    const { logicalName } = parseFetch(fetchXml);
+    const scope = $("scope").value;
+    const limit = scope === "all" ? null : parseInt(scope, 10);
+    const excludeHours = parseInt($("excludeHours").value, 10) || 0;
+    // When excluding, pull a bigger candidate pool so we can backfill to N after dropping excluded records.
+    const poolLimit = (excludeHours > 0 && limit) ? Math.min(limit * 30, 5000) : limit;
+    log(`Recovery point (UTC): ${cutoffIso}  |  Scope: ${limit ? "first " + limit : "all"} records`
+      + (excludeHours ? `  |  Exclude changed < ${excludeHours}h` : ""));
+
+    let ids, targetLogical, meta;
+    if (logicalName === "audit") {
+      setStatus("Finding affected records from audit history…");
+      log(`1) Finding record(s) changed (audit history)…`);
+      const found = await fetchAffectedRecords(fetchXml, poolLimit);
+      ids = found.ids; targetLogical = found.targetLogical;
+      if (!ids.size) { setStatus("No audit rows matched."); return; }
+      if (!targetLogical) throw new Error("Could not infer the target table from the audit query.");
+      log(`   Target table: ${targetLogical}  |  ${ids.size} candidate(s).`);
+      meta = await getEntityMeta(targetLogical);
+    } else {
+      targetLogical = logicalName;
+      setStatus("Reading metadata…");
+      meta = await getEntityMeta(logicalName);
+      log(`Entity set: ${meta.entitySet}  |  Primary key: ${meta.primaryId}`);
+      setStatus("Resolving records…");
+      log(`1) Resolving record(s) from FetchXML…`);
+      ids = await fetchRecordIds(fetchXml, meta.primaryId, poolLimit);
+      log(`   ${ids.size} candidate(s).`);
+      if (!ids.size) { setStatus("No records matched."); return; }
+    }
+
+    // Exclude clause: drop records changed (e.g. already reverted) within the last N hours,
+    // applied at the finding stage so the first N survivors backfill the excluded ones.
+    let ordered = [...ids];
+    if (excludeHours > 0) {
+      const thresholdIso = new Date(Date.now() - excludeHours * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+      setStatus("Excluding recently changed records…");
+      log(`   Excluding records modified since ${thresholdIso} (last ${excludeHours}h)…`);
+      const excluded = await excludeRecentlyModified(ordered, meta, thresholdIso);
+      const before = ordered.length;
+      ordered = ordered.filter(id => !excluded.has(id));
+      log(`   Excluded ${before - ordered.length}; ${ordered.length} candidate(s) remain.`);
+    }
+    // Take the first N survivors.
+    if (limit && ordered.length > limit) ordered = ordered.slice(0, limit);
+    ids = new Set(ordered);
+    log(`   ${ids.size} record(s) to process.`);
+    if (!ids.size) { setStatus("Nothing to process after exclusion."); return; }
+    TARGET = { logical: targetLogical, entitySet: meta.entitySet };
+
+    setStatus("Scanning audit log…");
+    log("2) Scanning audit log for changes since the recovery point…");
+    const audits = await fetchAudits(ids, targetLogical, cutoffIso);
+    const changed = Object.keys(audits).length;
+    log(`   ${changed} records changed after the recovery point (${ids.size - changed} already correct).`);
+
+    setStatus("Restoring values…");
+    log("3) Retrieving audit details & restoring point-in-time values…");
+    PLAN = await reconstruct(audits, allowList);
+
+    render(PLAN, cutoffIso);
+    const has = Object.keys(PLAN).length > 0;
+    $("applyBtn").disabled = !has;
+    $("applyAllBtn").disabled = !has;
+    $("exportBtn").disabled = !has;
+    setStatus(`Preview ready — ${Object.keys(PLAN).length} records to update. Review, then Apply.`);
+    log("Preview complete. Review the changes above before applying.");
+    notify(`Preview ready — ${Object.keys(PLAN).length} record(s) to update`, has ? "info" : "warning");
+  } catch (e) {
+    log("ERROR: " + e.message); setStatus("Error — see log.");
+    console.error(e);
+  } finally { lockButtons(false); }
+}
+
+// Apply only the records currently shown (this page).
+function applyThisPage() {
+  const rids = curSlice.filter(r => PLAN[r] && Object.keys(PLAN[r].patch).length && !applied.has(r));
+  return doApply(rids, `this page (page ${curPage + 1})`);
+}
+// Apply every pending record across all pages.
+function applyAll() {
+  const rids = planRecs.filter(r => PLAN[r] && Object.keys(PLAN[r].patch).length && !applied.has(r));
+  return doApply(rids, `all ${rids.length} pending record(s)`);
+}
+
+async function doApply(rids, label) {
+  if (!rids.length) { alert("Nothing left to apply in " + label + "."); return; }
+  if (!confirm(`Restore ${rids.length} record(s) — ${label}?\nThis writes to ${$("envlabel").textContent} and cannot be auto-undone.`)) return;
+  try {
+    lockButtons(true);
+    log(`4) Restoring ${rids.length} record(s) — ${label}…`);
+    const res = await applyRecords(rids);
+    res.ok.forEach(r => applied.add(r));
+    log(`Done. ${res.done} record(s) restored${res.errors ? `, ${res.errors} error(s) (see log).` : "."}`);
+    setStatus(`Restored ${res.done}${res.errors ? `, ${res.errors} error(s)` : ""}. ${applied.size}/${planRecs.length} total applied.`);
+    notify(
+      `Restored ${res.done} record(s)${res.errors ? `, ${res.errors} error(s)` : ""}`,
+      res.errors ? "warning" : "success"
+    );
+    renderPage();
+  } catch (e) {
+    log("ERROR: " + e.message); setStatus("Error — see log.");
+    notify("Restore failed: " + e.message, "error", 6000);
+  } finally { lockButtons(false); }
+}
+
+function lockButtons(busy) {
+  const noPlan = !PLAN || !Object.keys(PLAN || {}).length;
+  $("previewBtn").disabled = busy;
+  $("applyBtn").disabled = busy || noPlan;
+  $("applyAllBtn").disabled = busy || noPlan;
+  $("prevBtn").disabled = busy || curPage === 0;
+  $("nextBtn").disabled = busy || curPage >= Math.ceil(planRecs.length / PAGE_SIZE) - 1;
+}
+function exportPlan() {
+  const blob = new Blob([JSON.stringify({
+    toolVersion: APP_VERSION, buildDate: BUILD_DATE, orgVersion: ORG_VERSION,
+    env: $("envlabel").textContent,
+    recoveryPoint: resolveCutoffIso(), plan: PLAN
+  }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "audit-restore-plan.json"; a.click();
+}
+
+$("previewBtn").addEventListener("click", runPreview);
+$("applyBtn").addEventListener("click", applyThisPage);
+$("applyAllBtn").addEventListener("click", applyAll);
+$("exportBtn").addEventListener("click", exportPlan);
+$("prevBtn").addEventListener("click", () => { if (curPage > 0) { curPage--; renderPage(); } });
+$("nextBtn").addEventListener("click", () => {
+  if (curPage < Math.ceil(planRecs.length / PAGE_SIZE) - 1) { curPage++; renderPage(); }
+});
+
+// ---------- FetchXML builder (from audit history) ----------
+function localToUtcIso(val, tz) {
+  if (!val) return null;
+  if (tz === "utc") return val.length === 16 ? val + ":00Z" : val + "Z";
+  return new Date(val).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function resolveUserId(input) {
+  if (!input) return null;
+  if (GUID_RE.test(input)) return input;
+  const v = input.replace(/'/g, "''");
+  const flt = `contains(fullname,'${v}') or contains(internalemailaddress,'${v}') or domainname eq '${v}'`;
+  const url = `${baseUrl()}/systemusers?$select=systemuserid,fullname,internalemailaddress`
+            + `&$filter=${encodeURIComponent(flt)}&$top=5`;
+  const data = await apiGet(url);
+  if (!data.value.length) throw new Error(`No user matched "${input}".`);
+  if (data.value.length > 1)
+    log(`  note: ${data.value.length} users matched "${input}", using "${data.value[0].fullname}".`);
+  log(`  user "${input}" → ${data.value[0].fullname} (${data.value[0].systemuserid})`);
+  return data.value[0].systemuserid;
+}
+
+async function generateAuditFetch() {
+  try {
+    const table = $("bTable").value.trim();
+    if (!table) { alert("Enter the table logical name."); return; }
+    const tz = $("bTz").value;
+    const start = localToUtcIso($("bStart").value, tz);
+    const end = localToUtcIso($("bEnd").value, tz);
+
+    let userId = null;
+    if ($("bUser").value.trim()) {
+      setStatus("Resolving user…");
+      userId = await resolveUserId($("bUser").value.trim());
+    }
+    const conds = [
+      `<condition attribute="objecttypecode" operator="eq" value="${table}" />`,
+      `<condition attribute="operation" operator="eq" value="2" />`,
+    ];
+    if (start) conds.push(`<condition attribute="createdon" operator="on-or-after" value="${start}" />`);
+    if (end)   conds.push(`<condition attribute="createdon" operator="on-or-before" value="${end}" />`);
+    if (userId) conds.push(`<condition attribute="userid" operator="eq" value="${userId}" />`);
+    const xml =
+`<fetch distinct="true">
+  <entity name="audit">
+    <attribute name="objectid" />
+    <filter type="and">
+      ${conds.join("\n      ")}
+    </filter>
+  </entity>
+</fetch>`;
+    $("fetch").value = xml;
+    // recovery point follows the window start
+    if ($("bStart").value) { $("cutoff").value = $("bStart").value; $("tz").value = tz; refreshUtcEcho(); }
+    setStatus("FetchXML generated. Review, then Preview.");
+    log(`Generated audit FetchXML for '${table}'`
+      + (userId ? ` by user ${userId}` : " (all users)")
+      + (start ? `, from ${start}` : "") + (end ? ` to ${end}` : "") + ".");
+  } catch (e) {
+    log("ERROR (builder): " + e.message); setStatus("Builder error — see log.");
+  }
+}
+$("genBtn").addEventListener("click", generateAuditFetch);
+
+// Resolve the Dataverse org version for the header badge (best-effort).
+async function initVersion() {
+  try {
+    const d = PPTB
+      ? await window.dataverseAPI.execute({ operationName: "RetrieveVersion", operationType: "function" })
+      : await apiGet(`${baseUrl()}/RetrieveVersion()`);
+    ORG_VERSION = d.Version || null;
+    if (ORG_VERSION) {
+      $("verlabel").textContent = `v${APP_VERSION} · org ${ORG_VERSION}`;
+      log(`Tool v${APP_VERSION} (build ${BUILD_DATE})  |  Dataverse org version ${ORG_VERSION}`);
+    }
+  } catch (e) { /* standalone/offline — keep tool version only */ }
+}
+initVersion();
+
+// view toggle
+$("listBtn").addEventListener("click", () => setView("list"));
+$("tableBtn").addEventListener("click", () => setView("table"));
+function setView(v) {
+  const list = v === "list";
+  $("listview").style.display = list ? "block" : "none";
+  $("tablewrap").style.display = list ? "none" : "block";
+  $("listBtn").classList.toggle("active", list);
+  $("tableBtn").classList.toggle("active", !list);
+}
+</script>
+</body>
+</html>

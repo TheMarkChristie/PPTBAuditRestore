@@ -1,0 +1,41 @@
+{
+  "name": "proximo3-audit-restore",
+  "version": "1.6.1",
+  "displayName": "Audit Restore",
+  "description": "Restore Dataverse records to their field state at a point in time using the audit log. Find affected records by table/user/date window, preview before→after changes, and apply in pages.",
+  "main": "index.html",
+  "icon": "icon.svg",
+  "license": "MIT",
+  "keywords": [
+    "dataverse",
+    "dynamics-365",
+    "power-platform",
+    "audit",
+    "restore",
+    "point-in-time",
+    "recovery"
+  ],
+  "contributors": [
+    { "name": "Mark Christie", "url": "https://github.com/TheMarkChristie" }
+  ],
+  "homepage": "https://github.com/TheMarkChristie/PPTBAuditRestore#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheMarkChristie/PPTBAuditRestore.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheMarkChristie/PPTBAuditRestore/issues"
+  },
+  "configurations": {
+    "repository": "https://github.com/TheMarkChristie/PPTBAuditRestore",
+    "website": "https://github.com/TheMarkChristie/PPTBAuditRestore#readme",
+    "readmeUrl": "https://raw.githubusercontent.com/TheMarkChristie/PPTBAuditRestore/main/README.md"
+  },
+  "features": {
+    "multiConnection": "optional",
+    "minAPI": "1.0.0"
+  },
+  "scripts": {
+    "build": "node build.js"
+  }
+}

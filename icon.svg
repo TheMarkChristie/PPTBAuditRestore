@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Audit Restore">
+  <rect width="48" height="48" rx="10" fill="#2B2B2B"/>
+  <!-- clock / point-in-time -->
+  <circle cx="24" cy="24" r="13" fill="none" stroke="#EE163B" stroke-width="3"/>
+  <path d="M24 16 V24 L30 28" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- restore arrow -->
+  <path d="M14 12 a14 14 0 0 0 -3 8" fill="none" stroke="#EE163B" stroke-width="3" stroke-linecap="round"/>
+  <path d="M9 13 l2 7 l7 -2 z" fill="#EE163B"/>
+</svg>
