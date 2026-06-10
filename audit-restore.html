@@ -228,7 +228,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.7.0";        // tool build — bump on each deploy
+const APP_VERSION = "1.7.1";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -726,8 +726,11 @@ async function applyRecords(rids) {
         errors++;
         log(`  ✖ ${rid}: ${e.message}`);
       }
-      if ((done + errors) % 10 === 0 || done + errors === rids.length)
+      const n = done + errors;
+      if (n % 10 === 0 || n === rids.length)
         setStatus(`Applied ${done}/${rids.length}` + (errors ? ` (${errors} errors)` : ""));
+      if (n > 0 && (n % 200 === 0 || n === rids.length))
+        log(`    …${n}/${rids.length} written${errors ? ` (${errors} error(s))` : ""}`);
     }
   }
   await Promise.all(Array.from({ length: Math.min(POOL, rids.length) }, worker));
@@ -916,30 +919,53 @@ async function runAllInBatches() {
     const total = ordered.length;
     if (!total) { setStatus("Nothing to process."); log("No records to process."); return; }
     const batches = Math.ceil(total / BATCH_SIZE);
-    if (!confirm(`Restore ${total} record(s) in ${batches} batch(es) of up to ${BATCH_SIZE}, applying each batch as it completes?\n\nWrites to ${$("envlabel").textContent} via the Web API. No per-batch preview, and there is no automatic undo.`)) {
-      log("Batch run cancelled."); setStatus("Cancelled."); return;
-    }
+    log(`Found ${total} record(s) to process → ${batches} batch(es) of up to ${BATCH_SIZE}.`);
+
+    // Hard warning — batch mode performs NO preview/checks.
+    const warn = "⚠ WARNING — NO CHECKS OR PREVIEW HAVE BEEN PERFORMED.\n\n"
+      + `This will UPDATE ALL ${total} matched record(s), in ${batches} batch(es) of up to ${BATCH_SIZE}, `
+      + `writing reconstructed values directly to ${$("envlabel").textContent} via the Web API.\n\n`
+      + "You have NOT seen the actual before → after changes, and there is NO automatic undo.\n\n"
+      + `Click OK to update all ${total} records now, or Cancel to stop and run a Preview first.`;
+    if (!confirm(warn)) { log("Batch run cancelled by user."); setStatus("Cancelled."); return; }
+    log(`Confirmed. Starting batch restore of ${total} record(s)…`);
 
     // 2) Process each chunk: scan → reconstruct → apply.
     let totalApplied = 0, totalErrors = 0, totalChanged = 0;
+    const t0 = performance.now();
     for (let b = 0; b < batches; b++) {
+      const bn = b + 1;
       const chunk = ordered.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
-      log(`— Batch ${b + 1}/${batches}: ${chunk.length} record(s) —`);
-      setStatus(`Batch ${b + 1}/${batches}: scanning audit log…`);
+      log(`━━ Batch ${bn}/${batches} — ${chunk.length} record(s) (rows ${b * BATCH_SIZE + 1}–${b * BATCH_SIZE + chunk.length}) ━━`);
+
+      setStatus(`Batch ${bn}/${batches}: scanning audit log…`);
+      log(`  [${bn}] scanning audit log for changes since cutoff…`);
       const audits = await fetchAudits(new Set(chunk), targetLogical, cutoffIso);
-      setStatus(`Batch ${b + 1}/${batches}: restoring values…`);
+      log(`  [${bn}] ${Object.keys(audits).length} of ${chunk.length} record(s) changed since the recovery point.`);
+
+      setStatus(`Batch ${bn}/${batches}: reconstructing values…`);
+      log(`  [${bn}] reconstructing point-in-time values…`);
       const plan = await reconstruct(audits, allowList);
-      // wire the page view to this batch so the user can see what's happening
       PLAN = plan; planRecs = Object.keys(plan); applied = new Set(); curPage = 0;
       render(plan, cutoffIso);
       const rids = planRecs.filter(r => Object.keys(plan[r].patch).length);
       totalChanged += rids.length;
-      if (!rids.length) { log(`  batch ${b + 1}: no writable changes.`); continue; }
-      setStatus(`Batch ${b + 1}/${batches}: applying ${rids.length}…`);
-      const res = await applyRecords(rids);
-      res.ok.forEach(r => applied.add(r)); renderPage();
-      totalApplied += res.done; totalErrors += res.errors;
-      log(`  batch ${b + 1}: ${res.done} restored${res.errors ? `, ${res.errors} error(s)` : ""}. Running total ${totalApplied}/${total}.`);
+
+      if (!rids.length) {
+        log(`  [${bn}] no writable changes in this batch — skipping.`);
+      } else {
+        log(`  [${bn}] applying ${rids.length} Web API update(s)…`);
+        setStatus(`Batch ${bn}/${batches}: applying ${rids.length}…`);
+        const res = await applyRecords(rids);
+        res.ok.forEach(r => applied.add(r)); renderPage();
+        totalApplied += res.done; totalErrors += res.errors;
+        log(`  [${bn}] applied ${res.done}${res.errors ? `, ${res.errors} error(s)` : ""}.`);
+      }
+
+      const elapsed = (performance.now() - t0) / 1000;
+      const eta = (elapsed / bn) * (batches - bn);
+      log(`  [${bn}] batch ${bn}/${batches} done · total restored ${totalApplied}/${total}`
+        + ` · elapsed ${elapsed.toFixed(0)}s · ~${eta.toFixed(0)}s remaining.`);
     }
     setStatus(`Batch run complete — ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""} across ${batches} batch(es).`);
     log(`Done. ${totalApplied} restored${totalErrors ? `, ${totalErrors} error(s)` : ""} of ${total} record(s).`);
