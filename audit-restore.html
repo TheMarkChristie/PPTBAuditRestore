@@ -110,12 +110,12 @@
       <summary>⚙ Build FetchXML from audit history — find records changed in a date window</summary>
       <div class="row">
         <div>
-          <label for="bTable">Table (logical name)</label>
-          <input type="text" id="bTable" placeholder="prx3_job" title="Table logical name" />
+          <label for="bTable">Table</label>
+          <select id="bTable" title="Table"><option value="">— expand to load tables —</option></select>
         </div>
         <div>
-          <label for="bUser">Changed by <span style="font-weight:400;color:#999">(name, email or GUID — optional)</span></label>
-          <input type="text" id="bUser" placeholder="all users" title="Changed by user" />
+          <label for="bUser">Changed by <span style="font-weight:400;color:#999">(optional)</span></label>
+          <select id="bUser" title="Changed by user"><option value="">(all users)</option></select>
         </div>
       </div>
       <div class="row">
@@ -216,7 +216,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.6.3";        // tool build — bump on each deploy
+const APP_VERSION = "1.6.4";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -949,6 +949,39 @@ async function generateAuditFetch() {
   }
 }
 $("genBtn").addEventListener("click", generateAuditFetch);
+
+// Populate the Table + Changed-by pickers from the connected org (lazily, on first expand).
+let builderLoaded = false;
+async function populateBuilderLists() {
+  if (builderLoaded) return;
+  builderLoaded = true;
+  // Tables — every table in the org, sorted by display name.
+  try {
+    setStatus("Loading tables…");
+    const td = await apiGet(`${baseUrl()}/EntityDefinitions?$select=LogicalName,DisplayName`);
+    const tables = (td.value || []).map(e => ({
+      ln: e.LogicalName,
+      dn: (e.DisplayName && e.DisplayName.UserLocalizedLabel && e.DisplayName.UserLocalizedLabel.Label) || e.LogicalName
+    })).sort((a, b) => a.dn.localeCompare(b.dn));
+    $("bTable").innerHTML = `<option value="">— choose a table —</option>`
+      + tables.map(t => `<option value="${t.ln}">${escapeHtml(t.dn)} (${t.ln})</option>`).join("");
+    log(`Loaded ${tables.length} tables into the picker.`);
+  } catch (e) { log("Could not load tables: " + e.message); builderLoaded = false; }
+  // Users — active (enabled) users, sorted by name.
+  try {
+    setStatus("Loading users…");
+    const ud = await apiGet(`${baseUrl()}/systemusers?$select=fullname,internalemailaddress,systemuserid`
+      + `&$filter=${encodeURIComponent("isdisabled eq false")}&$orderby=fullname`);
+    const users = ud.value || [];
+    $("bUser").innerHTML = `<option value="">(all users)</option>`
+      + users.map(u => `<option value="${u.systemuserid}">`
+        + `${escapeHtml(u.fullname || "(no name)")}${u.internalemailaddress ? " — " + escapeHtml(u.internalemailaddress) : ""}`
+        + `</option>`).join("");
+    log(`Loaded ${users.length} users into the picker.`);
+  } catch (e) { log("Could not load users: " + e.message); }
+  setStatus("");
+}
+$("builder").addEventListener("toggle", () => { if ($("builder").open) populateBuilderLists(); });
 
 // Resolve the Dataverse org version for the header badge (best-effort).
 async function initVersion() {
