@@ -1,11 +1,11 @@
 {
   "name": "proximo3-audit-restore",
-  "version": "1.7.7",
+  "version": "1.7.8",
   "displayName": "Audit Restore",
   "description": "Restore Dataverse records to their field state at a point in time using the audit log. Find affected records by table/user/date window, preview before→after changes, and apply in pages.",
   "main": "index.html",
   "icon": "icon.svg",
-  "files": ["dist", "icon.svg", "README.md", "LICENSE", "npm-shrinkwrap.json"],
+  "files": ["dist", "npm-shrinkwrap.json"],
   "license": "MIT",
   "author": "Mark Christie (https://github.com/TheMarkChristie)",
   "keywords": [
@@ -38,7 +38,7 @@
   },
   "features": {
     "multiConnection": "optional",
-    "minAPI": "1.0.0"
+    "minAPI": "1.2.2"
   },
   "scripts": {
     "build": "node build.js"
