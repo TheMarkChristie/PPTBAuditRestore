@@ -6,10 +6,15 @@
 <title>Dataverse Audit Restore</title>
 <style>
   :root {
+    color-scheme: light dark;
     --red: #EE163B; --charcoal: #2B2B2B; --ink: #1c1c1c;
     --line: #e3e3e3; --bg: #f5f6f8; --ok: #1a7f37; --warn: #b35900; --err: #c4314b;
   }
   * { box-sizing: border-box; }
+  /* Accessibility: visible focus, hover feedback, readable placeholders */
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; border-radius: 4px; }
+  button:not(:disabled):hover { filter: brightness(0.92); }
+  input::placeholder, textarea::placeholder { color: #8a8f98; opacity: 1; }
   body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); color: var(--ink); }
   header { background: var(--charcoal); color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
   header .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
@@ -33,7 +38,7 @@
   #tablewrap { display: none; }
   .hint { font-size: 12px; color: #777; margin-top: 4px; }
   .btnbar { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
-  button { padding: 10px 18px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  button { padding: 10px 18px; border: 0; border-radius: 7px; font-size: 14px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   .primary { background: var(--charcoal); color: #fff; }
   .danger { background: var(--red); color: #fff; }
@@ -117,6 +122,8 @@
     .builderbox { background: #1f2127; }
     .rec .recid { color: #b9bcc2; }
     .rec li { border-color: #33343a; }
+    .builderbox summary { color: var(--ink); }   /* was charcoal — invisible on dark */
+    select option { background: #1e1f24; color: var(--ink); }
   }
 </style>
 </head>
@@ -148,7 +155,7 @@
           </div>
         </div>
         <div>
-          <label for="bUserInput">Changed by <span style="font-weight:400;color:#999">(optional)</span></label>
+          <label for="bUserInput">Changed by <span style="font-weight:400;color:#8a8f98">(optional)</span></label>
           <div class="combo">
             <input type="text" id="bUserInput" autocomplete="off" placeholder="(all users)" title="Changed by user" />
             <div class="combo-list" id="bUserList"></div>
@@ -179,13 +186,13 @@
       </div>
     </details>
 
-    <label>FetchXML <span style="font-weight:400;color:#999">(selects the records to restore)</span></label>
+    <label for="fetch">FetchXML <span style="font-weight:400;color:#8a8f98">(selects the records to restore)</span></label>
     <textarea id="fetch" placeholder="&lt;fetch&gt;&#10;  &lt;entity name=&quot;prx3_job&quot;&gt;&#10;    &lt;attribute name=&quot;prx3_jobid&quot; /&gt;&#10;    &lt;filter&gt; ... &lt;/filter&gt;&#10;  &lt;/entity&gt;&#10;&lt;/fetch&gt;"></textarea>
     <div class="hint">The entity name is read from the fetch. Only the primary-key column is needed; extra columns are ignored.</div>
     <div class="row">
       <div>
         <label for="cutoff">Recovery date &amp; time</label>
-        <input type="datetime-local" id="cutoff" step="1" title="Recovery date and time" />
+        <input type="datetime-local" id="cutoff" step="1" autocomplete="off" title="Recovery date and time" />
       </div>
       <div>
         <label for="tz">Time zone of that value</label>
@@ -196,8 +203,8 @@
         <div class="hint" id="utcEcho">&nbsp;</div>
       </div>
       <div>
-        <label>Restrict to columns <span style="font-weight:400;color:#999">(optional)</span></label>
-        <input type="text" id="cols" placeholder="e.g. prx3_status, prx3_value (blank = all audited)" />
+        <label for="cols">Restrict to columns <span style="font-weight:400;color:#8a8f98">(optional)</span></label>
+        <input type="text" id="cols" autocomplete="off" placeholder="e.g. prx3_status, prx3_value (blank = all audited)…" />
         <div class="hint">Comma-separated allow-list. Blank reverts every audited field.</div>
       </div>
     </div>
@@ -218,7 +225,7 @@
       </div>
       <div class="narrow">
         <label for="excludeHours">Exclude recently reverted</label>
-        <input type="number" id="excludeHours" min="0" step="1" value="0" title="Skip records changed within this many hours" />
+        <input type="number" id="excludeHours" min="0" step="1" value="0" inputmode="numeric" autocomplete="off" title="Skip records changed within this many hours" />
         <div class="hint">Skip records already changed within the last N hours (0 = don't exclude).</div>
       </div>
     </div>
@@ -228,7 +235,7 @@
       <button type="button" class="danger" id="applyAllBtn" disabled>Apply all</button>
       <button type="button" class="danger" id="batchBtn">Restore all in batches of 1000</button>
       <button type="button" class="ghost" id="exportBtn" disabled>Download plan (JSON)</button>
-      <span id="status"></span>
+      <span id="status" role="status" aria-live="polite"></span>
     </div>
     <div id="summary"></div>
     <div id="log"></div>
@@ -254,7 +261,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.7.8";        // tool build — bump on each deploy
+const APP_VERSION = "1.7.9";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -1114,24 +1121,39 @@ $("genBtn").addEventListener("click", generateAuditFetch);
 // (they close before a click registers), so we use a plain element-based dropdown.
 function makeCombo(inputId, listId) {
   const input = $(inputId), list = $(listId);
-  let items = [], filtered = [], value = "";
+  let items = [], filtered = [], value = "", active = -1;
+  // ARIA combobox pattern
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute("aria-expanded", "false");
+  input.setAttribute("aria-controls", listId);
+  list.setAttribute("role", "listbox");
   function render() {
     const q = input.value.trim().toLowerCase();
     filtered = (q ? items.filter(it => it.label.toLowerCase().includes(q)) : items).slice(0, 400);
+    if (active >= filtered.length) active = filtered.length - 1;
     if (!items.length) list.innerHTML = `<div class="empty">loading…</div>`;
     else if (!filtered.length) list.innerHTML = `<div class="empty">no matches</div>`;
-    else list.innerHTML = filtered.map((it, i) => `<div class="opt" data-i="${i}">${escapeHtml(it.label)}</div>`).join("");
+    else list.innerHTML = filtered.map((it, i) =>
+      `<div class="opt${i === active ? " active" : ""}" role="option" id="${listId}-opt${i}" data-i="${i}" aria-selected="${i === active}">${escapeHtml(it.label)}</div>`).join("");
+    input.setAttribute("aria-activedescendant", active >= 0 ? `${listId}-opt${active}` : "");
   }
-  function open() { render(); list.classList.add("open"); }
-  function close() { list.classList.remove("open"); }
+  function open() { render(); list.classList.add("open"); input.setAttribute("aria-expanded", "true"); }
+  function close() { list.classList.remove("open"); input.setAttribute("aria-expanded", "false"); active = -1; }
+  function pick(i) { const it = filtered[i]; if (!it) return; value = it.value; input.value = it.label; close(); }
+  function scrollActive() { const el = list.querySelector(".opt.active"); if (el) el.scrollIntoView({ block: "nearest" }); }
   input.addEventListener("focus", open);
-  input.addEventListener("input", () => { value = ""; open(); });   // typing clears the pick until re-selected
-  input.addEventListener("blur", () => setTimeout(close, 150));      // delay so a click can land first
+  input.addEventListener("input", () => { value = ""; active = -1; open(); });   // typing clears the pick
+  input.addEventListener("blur", () => setTimeout(close, 150));                   // delay so a click can land first
+  input.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); if (!list.classList.contains("open")) open(); active = Math.min(active + 1, filtered.length - 1); render(); scrollActive(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(active - 1, 0); render(); scrollActive(); }
+    else if (e.key === "Enter") { if (active >= 0) { e.preventDefault(); pick(active); } }
+    else if (e.key === "Escape") { close(); }
+  });
   list.addEventListener("mousedown", e => {                          // mousedown beats the input's blur
     const opt = e.target.closest(".opt"); if (!opt) return;
-    e.preventDefault();
-    const it = filtered[+opt.dataset.i]; if (!it) return;
-    value = it.value; input.value = it.label; close();
+    e.preventDefault(); pick(+opt.dataset.i);
   });
   return {
     setItems(arr) { items = arr; if (list.classList.contains("open")) render(); },
