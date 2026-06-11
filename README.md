@@ -1,5 +1,7 @@
 # Audit Restore — Power Platform Toolbox tool
 
+<img src="https://raw.githubusercontent.com/TheMarkChristie/PPTBAuditRestore/main/icon.svg" alt="Audit Restore icon" width="88" />
+
 *by Mark Christie*
 
 Restore Dataverse records to their field state at a point in time, sourced from the **audit log**.

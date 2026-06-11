@@ -93,6 +93,31 @@
   .builderbox { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; background: #f7f9fc; }
   .builderbox summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--charcoal); }
   .builderbox[open] summary { margin-bottom: 6px; }
+
+  /* ---------- Dark mode (follows the OS / Toolbox theme) ---------- */
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e6e6e6; --line: #3a3b42; --bg: #17181c; --ok: #4ec77a; --warn: #e3a857; --err: #ff6b81; }
+    .card { background: #25262b; }
+    .card h2 { color: #9aa0a6; }
+    label { color: #e6e6e6; }
+    input[type=text], input[type=datetime-local], input[type=number], textarea, select {
+      background: #1e1f24; color: var(--ink); border-color: var(--line); }
+    .hint { color: #9aa0a6; }
+    #status { color: #9aa0a6; }
+    #summary .stat { background: #1e1f24; }
+    #summary .stat b { color: #fff; }
+    th { background: #2c2d33; }
+    th, td { border-color: var(--line); }
+    .tablewrap, .rec { border-color: var(--line); }
+    .viewtoggle button, .pager button, .combo-list { background: #25262b; color: var(--ink); border-color: var(--line); }
+    .combo-list .opt:hover, .combo-list .opt.active { background: #33343a; }
+    .ghost { background: #3a3b42; color: #e6e6e6; }
+    code { background: #33343a; color: #e6e6e6; }
+    .banner { background: #2a1e22; }
+    .builderbox { background: #1f2127; }
+    .rec .recid { color: #b9bcc2; }
+    .rec li { border-color: #33343a; }
+  }
 </style>
 </head>
 <body>
@@ -229,7 +254,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.7.6";        // tool build — bump on each deploy
+const APP_VERSION = "1.7.7";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
