@@ -1,0 +1,39 @@
+name: Publish AuditRestore to NuGet
+
+# Publishes the XrmToolBox plugin to nuget.org via Trusted Publishing (OIDC — no stored API key).
+# Trigger by pushing a version tag, e.g.:  git tag v1.0.0 && git push origin v1.0.0
+# Requires a nuget.org Trusted Publishing policy for:
+#   Package Owner: TheMarkChristie | Repo: TheMarkChristie/PPTBAuditRestore | Workflow: publish-nuget.yml
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:        # also allow manual run from the Actions tab
+
+permissions:
+  id-token: write           # required for the OIDC token exchange
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup nuget.exe
+        uses: nuget/setup-nuget@v2
+
+      - name: Build (net48, Release) — also copies the HTML into app/
+        run: dotnet build xrmtoolbox/AuditRestore/AuditRestore.csproj -c Release
+
+      - name: Pack the XrmToolBox plugin
+        run: nuget pack xrmtoolbox/AuditRestore/AuditRestore.nuspec -OutputDirectory artifacts
+
+      - name: NuGet login (Trusted Publishing → short-lived API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: TheMarkChristie
+
+      - name: Push to nuget.org
+        run: dotnet nuget push "artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
