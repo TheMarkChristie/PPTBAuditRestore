@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>MarkChristie.AuditRestore</id>
+    <version>1.0.0</version>
+    <title>Audit Restore</title>
+    <authors>Mark Christie</authors>
+    <owners>Mark Christie</owners>
+    <projectUrl>https://github.com/TheMarkChristie/PPTBAuditRestore</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/TheMarkChristie/PPTBAuditRestore/main/logo.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <description>Restore Dataverse records to their field state at a point in time using the audit log. Find affected records by table/user/date window, preview before→after changes, and apply in pages.</description>
+    <summary>Restore Dataverse records to a point in time from the audit log.</summary>
+    <releaseNotes>Initial XrmToolBox release. WebView2-hosted Windows 95 UI; shares one HTML file with the Power Platform ToolBox tool and the D365 web resource.</releaseNotes>
+    <tags>XrmToolBox Plugin Dataverse Dynamics365 Audit Restore PointInTime Recovery</tags>
+    <dependencies>
+      <dependency id="XrmToolBox" version="1.2025.7.71" />
+    </dependencies>
+  </metadata>
+  <files>
+    <!-- Ship ONLY our own assembly + HTML; XrmToolBox provides WebView2 + the Dataverse SDK.
+         The Tool Library extracts a "Plugins" folder into the user's XrmToolBox Plugins dir. -->
+    <file src="bin\Release\net48\AuditRestore.dll" target="Plugins" />
+    <file src="bin\Release\net48\app\index.html" target="Plugins\app" />
+  </files>
+</package>

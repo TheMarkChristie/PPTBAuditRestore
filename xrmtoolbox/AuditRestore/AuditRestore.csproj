@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    XrmToolBox plugin: Audit Restore.
+    A thin WebView2 host around the shared ../../audit-restore.html. The HTML self-themes to
+    Windows 95 when it sees window.XTB_CONFIG, so no style-swap step is needed — we just copy it
+    to app/index.html and ship it next to the dll. Targets .NET Framework 4.8 (XrmToolBox req).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>AuditRestore</AssemblyName>
+    <RootNamespace>AuditRestore</RootNamespace>
+    <Product>Audit Restore</Product>
+    <Company>Mark Christie</Company>
+    <Authors>Mark Christie</Authors>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="XrmToolBoxPackage" Version="1.2025.7.71" />
+    <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client" Version="1.1.32" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
+  </ItemGroup>
+
+  <!-- Copy the canonical single-file HTML into the output's app/ folder after each build,
+       so WebView2 can load it next to the dll (and the .nuspec can pack it). -->
+  <Target Name="CopyApp" AfterTargets="Build">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\audit-restore.html"
+          DestinationFiles="$(OutDir)app\index.html"
+          SkipUnchangedFiles="false" />
+  </Target>
+
+</Project>

@@ -1,6 +1,6 @@
 # Audit Restore — Power Platform Toolbox tool
 
-<img src="https://raw.githubusercontent.com/TheMarkChristie/PPTBAuditRestore/main/icon.svg" alt="Audit Restore icon" width="88" />
+![Audit Restore](https://raw.githubusercontent.com/TheMarkChristie/PPTBAuditRestore/main/icon.svg)
 
 *by Mark Christie*
 
@@ -32,8 +32,14 @@ cutoff is discarded — it is not restored.
 3. **Review** the before → after list (paged 100 at a time), then **Apply this page** or **Apply all**.
 
 This is the [Power Platform Toolbox](https://docs.powerplatformtoolbox.com/tool-development)
-packaging of the single-file `audit-restore.html`. The same file also runs as a Dataverse
-**web resource** — it auto-detects its host (Toolbox vs web resource) and uses the right APIs.
+packaging of the single-file `audit-restore.html`. The **same file** runs in three hosts — it
+auto-detects each and uses the right data API and theme:
+
+| Host | Data | Theme |
+|------|------|-------|
+| Power Platform Toolbox | `window.dataverseAPI` | dark (default) |
+| XrmToolBox (WebView2 plugin — see `xrmtoolbox/`) | Web API + injected OAuth token | Windows 95 |
+| D365 web resource / standalone | same-origin `fetch` | light |
 
 ## How it talks to Dataverse
 

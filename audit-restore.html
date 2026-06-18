@@ -99,35 +99,82 @@
   .builderbox summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--charcoal); }
   .builderbox[open] summary { margin-bottom: 6px; }
 
-  /* ---------- Dark mode (follows the OS / Toolbox theme) ---------- */
-  @media (prefers-color-scheme: dark) {
-    :root { --ink: #e6e6e6; --line: #3a3b42; --bg: #17181c; --ok: #4ec77a; --warn: #e3a857; --err: #ff6b81; }
-    .card { background: #25262b; }
-    .card h2 { color: #9aa0a6; }
-    label { color: #e6e6e6; }
-    input[type=text], input[type=datetime-local], input[type=number], textarea, select {
-      background: #1e1f24; color: var(--ink); border-color: var(--line); }
-    .hint { color: #9aa0a6; }
-    #status { color: #9aa0a6; }
-    #summary .stat { background: #1e1f24; }
-    #summary .stat b { color: #fff; }
-    th { background: #2c2d33; }
-    th, td { border-color: var(--line); }
-    .tablewrap, .rec { border-color: var(--line); }
-    .viewtoggle button, .pager button, .combo-list { background: #25262b; color: var(--ink); border-color: var(--line); }
-    .combo-list .opt:hover, .combo-list .opt.active { background: #33343a; }
-    .ghost { background: #3a3b42; color: #e6e6e6; }
-    code { background: #33343a; color: #e6e6e6; }
-    .banner { background: #2a1e22; }
-    .builderbox { background: #1f2127; }
-    .rec .recid { color: #b9bcc2; }
-    .rec li { border-color: #33343a; }
-    .builderbox summary { color: var(--ink); }   /* was charcoal — invisible on dark */
-    select option { background: #1e1f24; color: var(--ink); }
-  }
+  /* ====================================================================
+     Dark theme — applied via body.theme-dark. PPTB sets this by default;
+     the web/standalone host adds it when the OS prefers dark (set in JS).
+     ==================================================================== */
+  body.theme-dark { color-scheme: dark; --ink: #e6e6e6; --line: #3a3b42; --bg: #17181c; --ok: #4ec77a; --warn: #e3a857; --err: #ff6b81; }
+  body.theme-dark .card { background: #25262b; }
+  body.theme-dark .card h2 { color: #9aa0a6; }
+  body.theme-dark label { color: #e6e6e6; }
+  body.theme-dark input[type=text], body.theme-dark input[type=datetime-local], body.theme-dark input[type=number], body.theme-dark textarea, body.theme-dark select {
+    background: #1e1f24; color: var(--ink); border-color: var(--line); }
+  body.theme-dark .hint, body.theme-dark #status { color: #9aa0a6; }
+  body.theme-dark #summary .stat { background: #1e1f24; }
+  body.theme-dark #summary .stat b { color: #fff; }
+  body.theme-dark th { background: #2c2d33; }
+  body.theme-dark th, body.theme-dark td { border-color: var(--line); }
+  body.theme-dark .tablewrap, body.theme-dark .rec { border-color: var(--line); }
+  body.theme-dark .viewtoggle button, body.theme-dark .pager button, body.theme-dark .combo-list { background: #25262b; color: var(--ink); border-color: var(--line); }
+  body.theme-dark .combo-list .opt:hover, body.theme-dark .combo-list .opt.active { background: #33343a; }
+  body.theme-dark .ghost { background: #3a3b42; color: #e6e6e6; }
+  body.theme-dark code { background: #33343a; color: #e6e6e6; }
+  body.theme-dark .banner { background: #2a1e22; }
+  body.theme-dark .builderbox { background: #1f2127; }
+  body.theme-dark .rec .recid { color: #b9bcc2; }
+  body.theme-dark .rec li { border-color: #33343a; }
+  body.theme-dark .builderbox summary { color: var(--ink); }
+  body.theme-dark select option { background: #1e1f24; color: var(--ink); }
+
+  /* ====================================================================
+     Windows 95 theme — XrmToolBox WebView2 host (body[data-host="xtb"]).
+     Silver windows, teal desktop, navy title bars, 3-D bevels. Accessible:
+     black-on-silver ~6:1, white-on-navy ~14:1.
+     ==================================================================== */
+  body[data-host="xtb"] { background: #008080; color: #000; font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif; font-size: 12px; }
+  body[data-host="xtb"] main { max-width: none; }
+  body[data-host="xtb"] header { background: linear-gradient(90deg, #000080, #1084d0); color: #fff; border-bottom: 2px solid #c0c0c0; }
+  body[data-host="xtb"] header .author { color: #dfe7ff; }
+  body[data-host="xtb"] header #envlabel, body[data-host="xtb"] header .ver { color: #dfe7ff; border-color: #5a7fd0; }
+  body[data-host="xtb"] .card { background: #c0c0c0; border: 2px solid; border-color: #fff #000 #000 #fff; border-radius: 0; padding: 3px 3px 12px; }
+  body[data-host="xtb"] .card h2 { background: linear-gradient(90deg, #000080, #1084d0); color: #fff; text-transform: none; letter-spacing: 0; margin: -3px -3px 10px; padding: 3px 6px; }
+  body[data-host="xtb"] label { font-weight: 700; color: #000; }
+  body[data-host="xtb"] .hint, body[data-host="xtb"] #status { color: #404040; }
+  body[data-host="xtb"] input[type=text], body[data-host="xtb"] input[type=datetime-local], body[data-host="xtb"] input[type=number], body[data-host="xtb"] textarea, body[data-host="xtb"] select {
+    background: #fff; color: #000; border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; }
+  body[data-host="xtb"] button { background: #c0c0c0; color: #000; border: 2px solid; border-color: #fff #000 #000 #fff; border-radius: 0; box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080; font-weight: 400; }
+  body[data-host="xtb"] button:active:not(:disabled) { border-color: #808080 #fff #fff #808080; box-shadow: inset 1px 1px 0 #000; }
+  body[data-host="xtb"] .primary { font-weight: 700; outline: 1px solid #000; outline-offset: -5px; }
+  body[data-host="xtb"] .danger { font-weight: 700; color: #a80000; }
+  body[data-host="xtb"] #summary .stat { background: #fff; border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; }
+  body[data-host="xtb"] #summary .stat b { color: #000080; }
+  body[data-host="xtb"] th { background: #c0c0c0; color: #000; border: 2px solid; border-color: #fff #808080 #808080 #fff; }
+  body[data-host="xtb"] .tablewrap, body[data-host="xtb"] .combo-list, body[data-host="xtb"] .rec { border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; background: #fff; }
+  body[data-host="xtb"] .combo-list .opt:hover, body[data-host="xtb"] .combo-list .opt.active { background: #000080; color: #fff; }
+  body[data-host="xtb"] .viewtoggle button.active { background: #000080; color: #fff; }
+  body[data-host="xtb"] .rec .recid { color: #000080; }
+  body[data-host="xtb"] .banner { background: #fffbe0; border-left: 4px solid #a80000; border-radius: 0; color: #000; }
+  body[data-host="xtb"] .builderbox { background: #c0c0c0; border: 2px solid; border-color: #fff #000 #000 #fff; border-radius: 0; }
+  body[data-host="xtb"] .builderbox summary { color: #000; font-weight: 700; }
+  body[data-host="xtb"] code { background: #fff; color: #000; border: 1px solid #808080; }
+  body[data-host="xtb"] #log { background: #000; color: #0f0; border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; font-family: 'Lucida Console', Consolas, monospace; }
+  body[data-host="xtb"] a, body[data-host="xtb"] .reclink { color: #0000ee; }
+  body[data-host="xtb"] :focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
 </style>
 </head>
 <body>
+<script>
+  /* Host detection + default theme (runs before content paints to avoid a flash).
+     PPTB → dark by default; XrmToolBox (WebView2) → Windows 95; web/standalone → light (OS dark honoured). */
+  (function () {
+    var P = !!window.dataverseAPI, X = !!window.XTB_CONFIG;
+    var host = P ? "pptb" : X ? "xtb" : "web";
+    document.body.dataset.host = host;
+    if (host === "pptb") document.body.classList.add("theme-dark");
+    else if (host === "web" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      document.body.classList.add("theme-dark");
+  })();
+</script>
 <header>
   <svg class="logo" viewBox="0 0 2048 2048" aria-hidden="true"><path fill="#EE163B" d="M 888.79 442.59 C 896.494 441.854 903.473 439.769 907.765 447.564 C 907.838 450.753 907.288 453.303 905.427 455.974 C 896.618 468.615 888.543 482.011 880.486 495.159 L 797.843 629.775 L 768.541 677.084 C 764.2 684.088 754.304 704.396 745.775 704.226 C 735.593 699.137 713.654 650.879 704.849 636.88 C 670.705 663.42 648.701 684.315 622.944 719.926 C 558.458 809.084 531.832 925.972 549.015 1034.34 C 566.103 1141.99 625.863 1238.22 714.787 1301.26 C 833.81 1387.41 987.736 1413.44 1131.37 1390.46 C 1262.85 1369.42 1392.57 1310.22 1472.73 1200.01 C 1535.8 1112.92 1558.61 997.835 1541.52 892.434 C 1496.03 611.924 1156.24 512.389 911.955 553.071 C 927.41 530.597 940.878 505.952 956.619 482.82 C 1025.18 477.356 1094.17 481.2 1161.7 494.247 C 1293.2 518.976 1423.48 584.746 1506.42 691.717 C 1590.27 799.867 1623.87 928.904 1607.06 1064.09 C 1591.22 1193.03 1524.63 1310.34 1422.03 1390.04 C 1162.36 1591.01 736.626 1559.73 532.059 1292.85 C 445.075 1177.38 407.059 1032.29 426.241 889.003 C 440.956 778.349 485.656 679.816 564.046 599.202 C 586.435 576.178 608.51 558.414 633.925 538.98 C 624.675 527.056 584.206 481.277 580.311 471.624 C 581.012 466.16 585.075 464.196 590.229 463.735 C 689.467 454.855 789.532 450.558 888.79 442.59 z"/><path fill="#fff" d="M 1006.6 633.438 C 1107.76 628.955 1278.33 645.484 1360.84 714.594 C 1373.34 725.319 1385.78 743.807 1385.59 760.739 C 1385.22 794.655 1344.86 821.27 1318.14 833.709 C 1227.41 875.948 1121.22 887.217 1022.34 887.125 C 1004.8 887.069 987.267 886.431 969.771 885.212 C 889.785 880.299 751.377 859.174 691.489 797.911 C 682.29 788.5 673.937 770.948 675.577 757.507 C 678.337 734.878 692.782 721.14 708.989 707.289 C 715.315 715.954 727.836 730.08 736.547 735.901 C 763.787 754.105 773.29 728.896 785.195 709.896 L 817.245 659.15 C 878.728 641.672 942.975 635.694 1006.6 633.438 z"/><path fill="#fff" d="M 1384.77 1019.93 C 1386.68 1030.28 1386.18 1154.96 1384.28 1164.32 C 1379.92 1185.84 1358.2 1202.89 1340.99 1214.14 C 1223.47 1290.99 991.499 1293.37 857.463 1265.18 C 801.723 1253.45 715.17 1228.31 682.717 1178.63 C 673.824 1159.8 676.35 1132.46 676.419 1111.58 L 676.926 1022.01 C 677.817 1023.05 678.732 1024.06 679.67 1025.06 C 689.96 1035.93 704.457 1045.8 717.297 1053.45 C 798.078 1101.53 910.556 1117.32 1002.71 1120.21 C 1118.15 1123.82 1297.21 1104.22 1384.77 1019.93 z"/><path fill="#fff" d="M 1384.66 824.742 C 1386.7 832.137 1385.89 953.658 1383.95 962.679 C 1379.26 984.451 1362.31 999.631 1344.52 1011.49 C 1229.24 1088.34 1002.32 1093.62 870.344 1067.58 C 811.408 1055.95 717.927 1032.1 682.98 980.103 C 672.894 961.478 675.754 935.121 675.783 914.161 L 675.944 827.136 C 688.747 842.974 709.204 856.909 727.241 866.011 C 823.814 914.739 947.637 928.388 1054.5 925.886 C 1155.46 923.522 1311.1 900.588 1384.66 824.742 z"/></svg>
   <h1>Dataverse Audit Restore</h1>
@@ -261,7 +308,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.7.10";       // tool build — bump on each deploy
+const APP_VERSION = "1.8.0";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-06-10";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
@@ -278,6 +325,13 @@ const BATCH_COLORS = ["#7fd1ff", "#9ae6a0", "#ff9eb5", "#c4a7ff", "#7ee8d3", "#f
   const vl = document.getElementById("verlabel");
   const el = document.getElementById("envlabel");
   if (vl) vl.textContent = "v" + APP_VERSION;
+
+  // XrmToolBox (WebView2): the plugin injects window.XTB_CONFIG = { baseUrl, token }.
+  if (typeof window !== "undefined" && window.XTB_CONFIG) {
+    ORG_BASE = (window.XTB_CONFIG.baseUrl || "").replace(/\/+$/, "");
+    el.textContent = ORG_BASE ? ORG_BASE.replace(/^https:\/\//, "") : "XrmToolBox";
+    return;
+  }
 
   // Power Platform Toolbox: read the active connection (auth + instance handled by the host).
   if (typeof window !== "undefined" && window.toolboxAPI && window.toolboxAPI.connections) {
@@ -359,13 +413,18 @@ function resolveCutoffIso() {
 }
 
 // ---------- Web API plumbing ----------
-// Dual-mode: inside Power Platform Toolbox, window.dataverseAPI is injected and handles
-// auth/instance routing. As a Dataverse web resource, fall back to same-origin fetch.
+// Triple-host data access:
+//   PPTB  — window.dataverseAPI (auth + instance handled by the host).
+//   XTB   — window.XTB_CONFIG { baseUrl, token }: fetch the Web API with the OAuth bearer token.
+//   web   — Dataverse web resource: same-origin fetch authenticated by the session.
 const PPTB = (typeof window !== "undefined") && !!window.dataverseAPI;
+const XTB  = (typeof window !== "undefined") && !!window.XTB_CONFIG;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function baseUrl() {
-  return `/api/data/${API_VER}`;   // only used to build relative paths; PPTB strips this off
+  // XTB → absolute org URL; web → same-origin relative. (PPTB strips the base off again.)
+  if (XTB && window.XTB_CONFIG.baseUrl) return window.XTB_CONFIG.baseUrl.replace(/\/+$/, "") + `/api/data/${API_VER}`;
+  return `/api/data/${API_VER}`;
 }
 function headers(extra) {
   const h = {
@@ -374,6 +433,7 @@ function headers(extra) {
     "OData-Version": "4.0",
     "Content-Type": "application/json; charset=utf-8",
   };
+  if (XTB && window.XTB_CONFIG.token) h["Authorization"] = "Bearer " + window.XTB_CONFIG.token;
   return Object.assign(h, extra || {});
 }
 
