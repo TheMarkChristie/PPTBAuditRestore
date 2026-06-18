@@ -6,3 +6,7 @@ dist/
 # .NET / XrmToolBox build output
 [Bb]in/
 [Oo]bj/
+
+# NuGet package output
+*.nupkg
+
