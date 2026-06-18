@@ -28,7 +28,7 @@
        so WebView2 can load it next to the dll (and the .nuspec can pack it). -->
   <Target Name="CopyApp" AfterTargets="Build">
     <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\audit-restore.html"
-          DestinationFiles="$(OutDir)app\index.html"
+          DestinationFiles="$(OutDir)app\audit-restore.html"
           SkipUnchangedFiles="false" />
   </Target>
 

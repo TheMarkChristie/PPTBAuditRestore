@@ -67,7 +67,7 @@ namespace AuditRestore
 
             var html = Path.Combine(
                 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? ".",
-                "app", "index.html");
+                "app", "audit-restore.html");   // unique name so it can't clash with other WebView2 tools
 
             if (File.Exists(html))
                 _web.CoreWebView2.Navigate(new Uri(html).AbsoluteUri);
