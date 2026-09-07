@@ -10,3 +10,8 @@ dist/
 # NuGet package output
 *.nupkg
 
+
+# build artefacts
+artifacts/
+*.tgz
+*.nupkg

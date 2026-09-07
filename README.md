@@ -38,7 +38,7 @@ auto-detects each and uses the right data API and theme:
 | Host | Data | Theme |
 |------|------|-------|
 | Power Platform Toolbox | `window.dataverseAPI` | dark (default) |
-| XrmToolBox (WebView2 plugin — see `xrmtoolbox/`) | Web API + injected OAuth token | Windows 95 |
+| XrmToolBox (WebView2 plugin — see `xrmtoolbox/`) | Web API + injected OAuth token | light (Fluent 2) |
 | D365 web resource / standalone | same-origin `fetch` | light |
 
 ## How it talks to Dataverse
@@ -68,9 +68,9 @@ cd pptb-audit-restore
 node build.js
 ```
 
-This produces `dist/` with `index.html` (the tool), `icon.svg`, `package.json`, `LICENSE`, and
-`README.md` — the layout Toolbox expects (`main` and `icon` are relative to the dist root).
-`npm publish` is run **from `dist/`**.
+This produces `dist/` with `index.html` (the tool) and `icon.svg` — the layout Toolbox expects
+(`main` and `icon` are relative to the dist root). `npm publish` is run **from the package root**;
+the `files` allowlist in `package.json` puts `dist/` into the published tarball.
 
 ## Publish to the public Power Platform Toolbox catalog
 
@@ -93,8 +93,7 @@ npx pptb-validate            # checks package.json against the review rules
 
 **3. Publish to npm** (`npm login` first — no org needed for an unscoped name)
 ```bash
-cd dist
-npm publish
+npm publish            # run from the package root, not dist/
 ```
 
 **4. Smoke-test the published build** — Toolbox → **Debug** → **Install from npm** →

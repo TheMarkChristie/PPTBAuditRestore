@@ -2,9 +2,11 @@
 
   <!--
     XrmToolBox plugin: Audit Restore.
-    A thin WebView2 host around the shared ../../audit-restore.html. The HTML self-themes to
-    Windows 95 when it sees window.XTB_CONFIG, so no style-swap step is needed — we just copy it
-    to app/index.html and ship it next to the dll. Targets .NET Framework 4.8 (XrmToolBox req).
+    A thin WebView2 host around the shared ../../audit-restore.html. The HTML self-themes to the
+    Fluent 2 light theme when it sees window.XTB_CONFIG, so no style-swap step is needed — we just
+    copy it to app/audit-restore.html (a unique name, so it cannot clash with another WebView2
+    tool in the shared Plugins/app folder) and ship it next to the dll. Targets .NET Framework 4.8
+    (XrmToolBox req).
   -->
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
@@ -15,7 +17,7 @@
     <Product>Audit Restore</Product>
     <Company>Mark Christie</Company>
     <Authors>Mark Christie</Authors>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -10,7 +10,7 @@ in three hosts from a single source of truth.
 | Host | Detected by | Data access | Theme |
 |------|-------------|-------------|-------|
 | Power Platform Toolbox | `window.dataverseAPI` | `dataverseAPI.queryData` / `fetchXmlQuery` / `update` / `execute` | **Dark** (default) |
-| XrmToolBox (WebView2) | `window.XTB_CONFIG` | `fetch` the Web API with the injected OAuth bearer token | **Windows 95** |
+| XrmToolBox (WebView2) | `window.XTB_CONFIG` | `fetch` the Web API with the injected OAuth bearer token | Light (Fluent 2) |
 | D365 web resource / standalone | neither | same-origin `fetch` (session auth) | Light (OS dark honoured) |
 
 ```js
@@ -65,6 +65,7 @@ each write itself creates a new audit entry.
 
 ## Accessibility
 
-WCAG 2.1 AA across all three themes: AA-contrast palettes, visible focus rings, keyboard-operable
+WCAG 2.1 AA in both Fluent 2 themes (light and dark): AA-contrast palettes, control boundaries at
+3:1 or better, visible focus rings, keyboard-operable
 comboboxes (ARIA combobox + listbox), `role="status"`/`aria-live` log, labelled controls, and
 `prefers-reduced-motion` honoured.

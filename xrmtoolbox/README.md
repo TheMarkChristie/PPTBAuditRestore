@@ -11,10 +11,10 @@ D365 web resource — so there is one UI and one set of logic across all three h
 - `AuditRestorePlugin.cs` — MEF registration (Name, Description, **Author = Mark Christie**, icons).
 - `AuditRestoreControl.cs` — the WebView2 host. On every connection change it injects
   `window.XTB_CONFIG = { baseUrl, token }` (org URL + OAuth bearer token from the active
-  connection), then loads `app/index.html`.
-- The HTML detects `window.XTB_CONFIG`, switches to the **Windows 95** theme (`data-host="xtb"`),
+  connection), then loads `app/audit-restore.html`.
+- The HTML detects `window.XTB_CONFIG`, switches to the **Fluent 2 light** theme (`data-host="xtb"`),
   and calls the Dataverse Web API directly with the bearer token.
-- `AuditRestore.csproj` copies `../../audit-restore.html` → `app/index.html` before each build, so
+- `AuditRestore.csproj` copies `../../audit-restore.html` → `app/audit-restore.html` after each build, so
   the plugin always ships the current UI. No style-swap step is needed — the HTML self-themes.
 
 ## Build & debug
@@ -40,7 +40,7 @@ nuget pack AuditRestore.nuspec
 
 Then publish the `.nupkg` to nuget.org and register the package id at
 <https://www.xrmtoolbox.com/plugins/new/>. The `.nuspec` ships only `AuditRestore.dll` +
-`app/index.html` into a `Plugins/` folder (XrmToolBox provides WebView2 + the Dataverse SDK).
+`app/audit-restore.html` into a `Plugins/` folder (XrmToolBox provides WebView2 + the Dataverse SDK).
 
 ## TODO before publishing
 

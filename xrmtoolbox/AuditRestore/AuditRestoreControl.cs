@@ -15,7 +15,7 @@ namespace AuditRestore
     /// <summary>
     /// WebView2 host for the shared Audit Restore HTML. On every connection change we push
     /// the org URL + a fresh OAuth access token into the page as window.XTB_CONFIG, then
-    /// (re)load it. The page detects XTB_CONFIG, switches to the Windows 95 theme, and calls
+    /// (re)load it. The page detects XTB_CONFIG, switches to the Fluent 2 light theme, and calls
     /// the Web API directly with the bearer token.
     /// </summary>
     public class AuditRestoreControl : PluginControlBase, IGitHubPlugin, IHelpPlugin
@@ -73,7 +73,7 @@ namespace AuditRestore
                 _web.CoreWebView2.Navigate(new Uri(html).AbsoluteUri);
             else
                 _web.CoreWebView2.NavigateToString(
-                    "<h3 style='font-family:Segoe UI'>app/index.html not found next to the plugin dll.</h3>" +
+                    "<h3 style='font-family:Segoe UI'>app/audit-restore.html not found next to the plugin dll.</h3>" +
                     "<p>Ensure audit-restore.html was copied to the output 'app' folder (see the .csproj copy step).</p>");
         }
 

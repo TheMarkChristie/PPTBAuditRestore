@@ -5,167 +5,445 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dataverse Audit Restore</title>
 <style>
+  /* ======================================================================
+     Fluent 2 — the house theme. Token names and values are lifted verbatim
+     from @fluentui/react-theme (webLightTheme / webDarkTheme), so this reads
+     as a modern model-driven app without shipping React.
+
+     Light is the base and serves data-host="web" (D365 web resource /
+     standalone) and data-host="xtb" (XrmToolBox WebView2 plugin).
+     data-host="pptb" (Power Platform ToolBox, a dark shell) re-declares the
+     colour tokens only.
+
+     Every foreground/background pair used for text clears WCAG 2.1 AA
+     (>= 4.5:1) in BOTH themes.
+     ====================================================================== */
+  :root,
+  body[data-host="web"],
+  body[data-host="xtb"] {
+    color-scheme: light;
+
+    --colorNeutralBackground1:          #ffffff;
+    --colorNeutralBackground1Hover:     #f5f5f5;
+    --colorNeutralBackground2:          #fafafa;
+    --colorNeutralBackground3:          #f5f5f5;
+    --colorNeutralBackground4:          #f0f0f0;
+    --colorNeutralBackgroundDisabled:   #f0f0f0;
+    --colorSubtleBackgroundHover:       #f5f5f5;
+
+    --colorNeutralForeground1:          #242424;  /* 15.5:1 on bg1 */
+    --colorNeutralForeground2:          #424242;  /* 10.1:1        */
+    --colorNeutralForeground3:          #616161;  /*  6.2:1        */
+    --colorNeutralForegroundDisabled:   #bdbdbd;
+    --colorNeutralForegroundOnBrand:    #ffffff;
+
+    --colorNeutralStroke1:              #d1d1d1;
+    --colorNeutralStroke2:              #e0e0e0;
+    --colorNeutralStrokeAccessible:     #616161;
+
+    --colorBrandBackground:             #0f6cbd;  /* white on it: 5.4:1 */
+    --colorBrandBackgroundHover:        #115ea3;
+    --colorBrandBackgroundPressed:      #0c3b5e;
+    --colorBrandForeground1:            #0f6cbd;
+    --colorBrandForegroundLink:         #115ea3;
+    --colorBrandStroke1:                #0f6cbd;
+
+    --colorPaletteRedForeground1:       #bc2f32;  /*  5.9:1 */
+    --colorPaletteRedBackground1:       #fdf6f6;
+    --colorPaletteRedBorder1:           #f1bbbc;
+    --colorPaletteGreenForeground1:     #0e700e;  /*  6.3:1 */
+    --colorPaletteGreenBackground1:     #f1faf1;
+    --colorPaletteGreenBorder1:         #9fd89f;
+    --colorPaletteOrangeForeground1:    #c43501;  /*  5.4:1 */
+    --colorPaletteYellowBackground1:    #fffef5;
+
+    --colorStrokeFocus2:                #000000;
+
+    --shadow2:  0 0 2px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.14);
+    --shadow4:  0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.14);
+    --shadow8:  0 0 2px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.14);
+    --shadow16: 0 0 2px rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.14);
+  }
+
+  /* Dark: Power Platform ToolBox. Colours only.
+     The bootstrap script also adds .theme-dark when a standalone/web host's OS
+     asks for dark, so one override serves both. color-scheme: dark makes the
+     native date pickers, selects and scrollbars render dark too. */
+  body[data-host="pptb"],
+  body.theme-dark {
+    color-scheme: dark;
+
+    --colorNeutralBackground1:          #292929;
+    --colorNeutralBackground1Hover:     #3d3d3d;
+    --colorNeutralBackground2:          #1f1f1f;
+    --colorNeutralBackground3:          #141414;
+    --colorNeutralBackground4:          #0a0a0a;
+    --colorNeutralBackgroundDisabled:   #141414;
+    --colorSubtleBackgroundHover:       #383838;
+
+    --colorNeutralForeground1:          #ffffff;  /* 14.6:1 on bg1 */
+    --colorNeutralForeground2:          #d6d6d6;  /* 10.0:1        */
+    --colorNeutralForeground3:          #adadad;  /*  6.5:1        */
+    --colorNeutralForegroundDisabled:   #5c5c5c;
+    --colorNeutralForegroundOnBrand:    #ffffff;
+
+    --colorNeutralStroke1:              #666666;
+    --colorNeutralStroke2:              #525252;
+    --colorNeutralStrokeAccessible:     #adadad;
+
+    --colorBrandBackground:             #115ea3;  /* white on it: 6.7:1 */
+    --colorBrandBackgroundHover:        #0f6cbd;
+    --colorBrandBackgroundPressed:      #0c3b5e;
+    --colorBrandForeground1:            #479ef5;
+    --colorBrandForegroundLink:         #479ef5;
+    --colorBrandStroke1:                #479ef5;
+
+    --colorPaletteRedForeground1:       #e37d80;
+    --colorPaletteRedBackground1:       #3f1011;
+    --colorPaletteRedBorder1:           #d13438;
+    --colorPaletteGreenForeground1:     #54b054;
+    --colorPaletteGreenBackground1:     #052505;
+    --colorPaletteGreenBorder1:         #107c10;
+    --colorPaletteOrangeForeground1:    #e9835e;
+    --colorPaletteYellowBackground1:    #4c4400;
+
+    --colorStrokeFocus2:                #ffffff;
+
+    --shadow2:  0 0 2px rgba(0,0,0,.24), 0 1px 2px rgba(0,0,0,.28);
+    --shadow4:  0 0 2px rgba(0,0,0,.24), 0 2px 4px rgba(0,0,0,.28);
+    --shadow8:  0 0 2px rgba(0,0,0,.24), 0 4px 8px rgba(0,0,0,.28);
+    --shadow16: 0 0 2px rgba(0,0,0,.24), 0 8px 16px rgba(0,0,0,.28);
+  }
+
+  /* color-scheme does not propagate from <body> to the viewport, so without this
+     the page scrollbar stays light in the dark theme. Mirroring it onto the root
+     keeps native scrollbars and form controls dark. Ignored by engines without
+     :has(), which simply leaves the previous (light-scrollbar) behaviour. */
+  :root:has(body[data-host="pptb"]), :root:has(body.theme-dark) { color-scheme: dark; }
+
+  /* Shape, type, spacing and motion — identical in both themes. */
   :root {
-    color-scheme: light dark;
-    --red: #EE163B; --red-btn: #D4123A; --charcoal: #2B2B2B; --ink: #1c1c1c;
-    --line: #e3e3e3; --bg: #f5f6f8; --ok: #1a7f37; --warn: #b35900; --err: #c4314b;
+    --borderRadiusSmall:  2px;
+    --borderRadiusMedium: 4px;
+    --borderRadiusLarge:  6px;
+    --borderRadiusXLarge: 8px;
+    --borderRadiusCircular: 10000px;
+
+    --fontFamilyBase: 'Segoe UI Variable Text', 'Segoe UI', 'Segoe UI Web (West European)',
+                      -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+    --fontFamilyMonospace: Consolas, 'Courier New', Courier, monospace;
+
+    --fontSizeBase200: 12px;   /* caption  */
+    --fontSizeBase300: 14px;   /* body     */
+    --fontSizeBase400: 16px;   /* subtitle */
+    --fontSizeBase500: 20px;
+    --fontSizeBase600: 24px;
+    --lineHeightBase300: 20px;
+    --fontWeightRegular: 400;
+    --fontWeightSemibold: 600;
+
+    --spacingXS: 4px;
+    --spacingS:  8px;
+    --spacingM:  12px;
+    --spacingL:  16px;
+    --spacingXL: 24px;
+
+    --durationFaster: 100ms;
+    --durationNormal: 200ms;
+    --curveEasyEase: cubic-bezier(.33,0,.67,1);
   }
+
   * { box-sizing: border-box; }
-  /* Accessibility: visible focus, hover feedback, readable placeholders */
-  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; border-radius: 4px; }
-  button:not(:disabled):hover { filter: brightness(0.92); }
-  input::placeholder, textarea::placeholder { color: #8a8f98; opacity: 1; }
-  body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); color: var(--ink); }
-  header { background: var(--charcoal); color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
-  header .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
-  header .logo { width: 32px; height: 32px; flex: 0 0 auto; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  header .author { color: #9a9a9a; font-size: 12px; font-style: italic; }
-  header #envlabel { color: #bbb; font-size: 13px; margin-left: auto; }
-  header .ver { color: #8a8a8a; font-size: 12px; margin-left: 14px; padding: 2px 8px; border: 1px solid #4a4a4a; border-radius: 20px; }
-  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 18px; }
-  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: #666; margin: 0 0 14px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
-  input[type=text], input[type=datetime-local], input[type=number], textarea, select {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px; font-family: inherit;
+
+  /* Accessibility: a 2px Fluent focus stroke that is never removed, only
+     restyled — black on light, white on dark. */
+  :focus-visible { outline: 2px solid var(--colorStrokeFocus2); outline-offset: 1px; border-radius: var(--borderRadiusMedium); }
+  ::placeholder { color: var(--colorNeutralForeground3); opacity: 1; }
+
+  body {
+    margin: 0;
+    font-family: var(--fontFamilyBase);
+    font-size: var(--fontSizeBase300);
+    line-height: var(--lineHeightBase300);
+    color: var(--colorNeutralForeground1);
+    background: var(--colorNeutralBackground2);
+    -webkit-font-smoothing: antialiased;
   }
-  textarea { min-height: 180px; font-family: 'Cascadia Code', Consolas, monospace; resize: vertical; }
-  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+
+  /* --- Header ----------------------------------------------------------- */
+  header {
+    background: var(--colorNeutralBackground1);
+    color: var(--colorNeutralForeground1);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+    box-shadow: var(--shadow2);
+    padding: var(--spacingM) var(--spacingXL);
+    display: flex; align-items: center; gap: var(--spacingM);
+  }
+  /* The Proximo 3 mark is drawn as a red ring with WHITE inner bands (see icon.svg),
+     so it needs the dark plate the app icon uses or the bands vanish on a light
+     header. #2B2B2B is that literal brand plate colour, not a theme colour. */
+  header .logo { width: 32px; height: 32px; flex: 0 0 auto; padding: 3px;
+                 background: #2B2B2B; border-radius: var(--borderRadiusMedium); }
+  header h1 { font-size: var(--fontSizeBase400); margin: 0; font-weight: var(--fontWeightSemibold); }
+  header .author { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); font-style: italic; }
+  header #envlabel { color: var(--colorNeutralForeground2); font-size: var(--fontSizeBase200); margin-left: auto; }
+  header .ver {
+    color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); margin-left: var(--spacingM);
+    padding: 2px var(--spacingS); border: 1px solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusCircular);
+  }
+
+  /* --- Surfaces --------------------------------------------------------- */
+  main { max-width: 1100px; margin: 0 auto; padding: var(--spacingXL); }
+  .card {
+    background: var(--colorNeutralBackground1);
+    border: 1px solid var(--colorNeutralStroke2);
+    border-radius: var(--borderRadiusLarge);
+    box-shadow: var(--shadow2);
+    padding: var(--spacingL);
+    margin-bottom: var(--spacingL);
+  }
+  .card h2 {
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
+    color: var(--colorNeutralForeground1);
+    margin: 0 0 var(--spacingM);
+  }
+
+  /* --- Forms ------------------------------------------------------------ */
+  label { display: block; font-size: var(--fontSizeBase300); font-weight: var(--fontWeightSemibold);
+          color: var(--colorNeutralForeground1); margin: var(--spacingM) 0 var(--spacingXS); }
+  .subtle { font-weight: var(--fontWeightRegular); color: var(--colorNeutralForeground3); }
+  input[type=text], input[type=datetime-local], input[type=number], textarea, select {
+    width: 100%;
+    font-family: inherit;
+    font-size: var(--fontSizeBase300);
+    line-height: var(--lineHeightBase300);
+    color: var(--colorNeutralForeground1);
+    background: var(--colorNeutralBackground1);
+    /* StrokeAccessible, NOT Stroke1. This border IS the field's visual boundary, so
+       WCAG 1.4.11 requires it to clear 3:1 against the fill it sits on. Stroke1
+       measures only 1.53:1 light / 2.53:1 dark and fails; StrokeAccessible is
+       6.19:1 light / 6.48:1 dark. Fluent's own default input uses Stroke1 and fails
+       this check — we deliberately diverge. Do not "correct" this back to Stroke1.
+       (The old border-bottom-color override is gone: the whole border is now
+       StrokeAccessible, so restating it for the bottom edge was a no-op.) */
+    border: 1px solid var(--colorNeutralStrokeAccessible);
+    border-radius: var(--borderRadiusMedium);
+    padding: 5px var(--spacingS);
+    min-height: 32px;
+  }
+  /* Hover has to step ABOVE the resting StrokeAccessible to still read as a change. */
+  input[type=text]:hover, input[type=datetime-local]:hover, input[type=number]:hover, textarea:hover, select:hover {
+    border-color: var(--colorNeutralForeground2);
+  }
+  input[type=text]:focus, input[type=datetime-local]:focus, input[type=number]:focus, textarea:focus, select:focus {
+    border-bottom: 2px solid var(--colorBrandStroke1);
+  }
+  input:disabled, textarea:disabled, select:disabled {
+    background: var(--colorNeutralBackgroundDisabled);
+    color: var(--colorNeutralForegroundDisabled);
+  }
+  textarea { min-height: 180px; font-family: var(--fontFamilyMonospace); resize: vertical; }
+  .row { display: flex; gap: var(--spacingL); flex-wrap: wrap; }
   .row > div { flex: 1; min-width: 200px; }
   .row > div.narrow { flex: 0 0 240px; }
-  #status { font-size: 13px; color: #666; }
+  .hint { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground3); margin-top: var(--spacingXS); }
+  #status { font-size: var(--fontSizeBase300); color: var(--colorNeutralForeground3); }
   #tablewrap { display: none; }
-  .hint { font-size: 12px; color: #777; margin-top: 4px; }
-  .btnbar { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
-  button { padding: 10px 18px; border: 0; border-radius: 7px; font-size: 14px; font-weight: 700; cursor: pointer; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  .primary { background: var(--charcoal); color: #fff; }
-  .danger { background: var(--red-btn); color: #fff; }   /* AA-contrast red for button text */
-  .ghost { background: #eee; color: #333; }
-  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-  .pill.ok { background: #e6f4ea; color: var(--ok); }
-  .pill.warn { background: #fff3e0; color: var(--warn); }
-  #log { background: #1e1e1e; color: #d4d4d4; font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px;
-         border-radius: 8px; padding: 12px; height: 200px; overflow: auto; white-space: pre-wrap; }
-  #summary { display: flex; gap: 24px; flex-wrap: wrap; margin: 8px 0 16px; }
-  #summary .stat { background: #fafafa; border: 1px solid var(--line); border-radius: 8px; padding: 12px 18px; }
-  #summary .stat b { display: block; font-size: 24px; color: var(--charcoal); }
-  #summary .stat small { color: #777; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { background: #fafafa; position: sticky; top: 0; }
-  .tablewrap { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-  code { background: #f0f0f0; padding: 1px 5px; border-radius: 4px; }
-  .flag { color: var(--warn); font-size: 11px; }
-  .viewtoggle { display: flex; gap: 6px; margin-bottom: 12px; }
-  .viewtoggle button { padding: 6px 14px; border: 1px solid var(--line); background: #fff; border-radius: 7px; font-weight: 600; }
-  .viewtoggle button.active { background: var(--charcoal); color: #fff; border-color: var(--charcoal); }
-  #listview { max-height: 560px; overflow: auto; }
-  .rec { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; padding: 12px 14px; }
-  .rec .recid { font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; color: #555; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; }
-  .rec .recid .count { color: var(--charcoal); font-weight: 700; white-space: nowrap; }
-  .reclink { color: var(--red); text-decoration: none; }
-  .reclink:hover { text-decoration: underline; }
-  .pager { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; flex-wrap: wrap; }
-  .pager button { flex: 0 0 auto; padding: 5px 12px; border: 1px solid var(--line); background: #fff; border-radius: 7px; font-weight: 600; }
-  .pager button:disabled { opacity: .4; cursor: not-allowed; }
-  .pager .info { flex: 1 1 auto; min-width: 140px; text-align: center; color: #555; }
+
+  /* --- Buttons ---------------------------------------------------------- */
+  .btnbar { display: flex; gap: var(--spacingS); align-items: center; margin-top: var(--spacingL); flex-wrap: wrap; }
+  button {
+    font-family: inherit;
+    font-size: var(--fontSizeBase300);
+    font-weight: var(--fontWeightSemibold);
+    line-height: var(--lineHeightBase300);
+    padding: 5px var(--spacingM);
+    min-height: 32px;
+    border-radius: var(--borderRadiusMedium);
+    /* StrokeAccessible, NOT Stroke1 — same rule as the inputs above. A button's
+       border is its visual boundary and must clear 3:1 (WCAG 1.4.11); Stroke1 is
+       only 1.53:1 light / 2.53:1 dark. Do not "correct" this back to Stroke1. */
+    border: 1px solid var(--colorNeutralStrokeAccessible);
+    background: var(--colorNeutralBackground1);
+    color: var(--colorNeutralForeground1);
+    cursor: pointer;
+    transition: background var(--durationFaster) var(--curveEasyEase);
+  }
+  button:hover:not(:disabled) { background: var(--colorNeutralBackground1Hover); }
+  .primary { background: var(--colorBrandBackground); border-color: var(--colorBrandBackground);
+             color: var(--colorNeutralForegroundOnBrand); }
+  .primary:hover:not(:disabled) { background: var(--colorBrandBackgroundHover); border-color: var(--colorBrandBackgroundHover); }
+  .danger  { background: var(--colorPaletteRedForeground1); border-color: var(--colorPaletteRedForeground1);
+             color: var(--colorNeutralForegroundOnBrand); }
+  /* No red hover token exists in the palette, so darken the fill rather than
+     invent a colour. Both themes stay above AA against their ink. */
+  .danger:hover:not(:disabled) { filter: brightness(.92); }
+  /* The dark theme's red fill is light, so the resting state needs dark ink (7.5:1). */
+  body[data-host="pptb"] .danger, body.theme-dark .danger { color: #000000; }
+  /* A ghost button still draws a visible boundary, so it takes StrokeAccessible too
+     (WCAG 1.4.11) — Stroke1 would fail at 1.53:1 / 2.53:1. */
+  .ghost   { background: transparent; border-color: var(--colorNeutralStrokeAccessible); color: var(--colorNeutralForeground2); }
+  .ghost:hover:not(:disabled) { background: var(--colorSubtleBackgroundHover); }
+  /* Last, so a disabled .primary/.danger/.ghost still reads as disabled. */
+  button:disabled {
+    background: var(--colorNeutralBackgroundDisabled);
+    color: var(--colorNeutralForegroundDisabled);
+    border-color: var(--colorNeutralStroke2);
+    cursor: not-allowed;
+  }
+
+  /* --- Pills / badges --------------------------------------------------- */
+  .pill {
+    display: inline-flex; align-items: center; gap: var(--spacingXS);
+    font-size: var(--fontSizeBase200); font-weight: var(--fontWeightSemibold); line-height: 16px;
+    padding: 2px var(--spacingS); border-radius: var(--borderRadiusCircular);
+    background: var(--colorNeutralBackground3); color: var(--colorNeutralForeground2);
+    border: 1px solid var(--colorNeutralStroke2);
+  }
+  .pill.ok   { background: var(--colorPaletteGreenBackground1); color: var(--colorPaletteGreenForeground1);
+               border-color: var(--colorPaletteGreenBorder1); }
+  .pill.err  { background: var(--colorPaletteRedBackground1); color: var(--colorPaletteRedForeground1);
+               border-color: var(--colorPaletteRedBorder1); }
+  /* The orange foreground is only 3.69:1 on the dark theme's #4c4400 yellow, so the
+     warn pill carries its ink in the neutral token and keeps orange as the border. */
+  .pill.warn { background: var(--colorPaletteYellowBackground1); color: var(--colorNeutralForeground1);
+               border-color: var(--colorPaletteOrangeForeground1); }
+
+  /* --- Console ---------------------------------------------------------- */
+  /* Deliberately a literal dark console in BOTH themes: log lines are tinted
+     by the script (DEFAULT_LOG_COLOR gold + the per-batch palette), and those
+     tints only clear AA against a dark ground. #d4d4d4 on #1e1e1e is 11.6:1. */
+  #log { background: #1e1e1e; color: #d4d4d4; font-family: var(--fontFamilyMonospace);
+         font-size: var(--fontSizeBase200); border: 1px solid var(--colorNeutralStroke1);
+         border-radius: var(--borderRadiusMedium); padding: var(--spacingM);
+         height: 200px; overflow: auto; white-space: pre-wrap; }
+
+  /* --- Summary stats ---------------------------------------------------- */
+  #summary { display: flex; gap: var(--spacingL); flex-wrap: wrap; margin: var(--spacingS) 0 var(--spacingL); }
+  #summary .stat { background: var(--colorNeutralBackground2); border: 1px solid var(--colorNeutralStroke2);
+                   border-radius: var(--borderRadiusMedium); padding: var(--spacingM) var(--spacingL); }
+  #summary .stat b { display: block; font-size: var(--fontSizeBase600); font-weight: var(--fontWeightSemibold);
+                     color: var(--colorNeutralForeground1); }
+  #summary .stat small { display: block; color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+
+  /* --- Tables ----------------------------------------------------------- */
+  table { width: 100%; border-collapse: collapse; font-size: var(--fontSizeBase200);
+          /* Digits share one advance width, so figures stack in a true column. */
+          font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: var(--spacingS) var(--spacingM);
+           border-bottom: 1px solid var(--colorNeutralStroke2); }
+  th { background: var(--colorNeutralBackground2); color: var(--colorNeutralForeground2);
+       font-weight: var(--fontWeightSemibold); border-bottom: 1px solid var(--colorNeutralStroke1);
+       position: sticky; top: 0; z-index: 1; }
+  /* Every cell centres on one axis whatever it holds — a bare glyph, a pill, a
+     two-line value, or a rowspan'd record id — so rows line up across the table. */
+  thead th, tbody td { vertical-align: middle; }
+  /* Narrow value columns: put .num on BOTH the th and every td of the column so the
+     heading sits centred over its values instead of hugging the left edge. Genuine
+     text columns (record ids, logical names, field values, notes) stay left. */
+  th.num, td.num { text-align: center;
+                   padding-left: var(--spacingXS); padding-right: var(--spacingXS); }
+  /* A centred cell's contents centre as a block too, so pills and glyphs share the
+     same axis as plain text in the column. */
+  td.num > * { display: inline-flex; align-items: center; justify-content: center; }
+  .tablewrap { max-height: 420px; overflow: auto; border: 1px solid var(--colorNeutralStroke2);
+               border-radius: var(--borderRadiusMedium); }
+  code { background: var(--colorNeutralBackground3); color: var(--colorNeutralForeground1);
+         font-family: var(--fontFamilyMonospace); padding: 1px 5px; border-radius: var(--borderRadiusSmall); }
+  .flag { color: var(--colorPaletteOrangeForeground1); font-size: var(--fontSizeBase200); }
+
+  /* --- View toggle & pager ---------------------------------------------- */
+  .viewtoggle { display: flex; gap: var(--spacingXS); margin-bottom: var(--spacingM); }
+  .viewtoggle button.active { background: var(--colorBrandBackground); color: var(--colorNeutralForegroundOnBrand);
+                              border-color: var(--colorBrandBackground); }
+  .viewtoggle button.active:hover:not(:disabled) { background: var(--colorBrandBackgroundHover);
+                              border-color: var(--colorBrandBackgroundHover); }
+  .pager { display: flex; align-items: center; gap: var(--spacingS); margin-bottom: var(--spacingM);
+           font-size: var(--fontSizeBase300); flex-wrap: wrap; }
+  .pager button { flex: 0 0 auto; }
+  .pager .info { flex: 1 1 auto; min-width: 140px; text-align: center; color: var(--colorNeutralForeground3); }
   /* Narrow screens: stack the info above full-width prev/next buttons. */
   @media (max-width: 540px) {
     .pager .info { order: -1; flex-basis: 100%; }
     .pager button { flex: 1 1 0; }
   }
-  .rec.applied { opacity: .6; }
-  .rec .applied-badge { color: var(--ok); font-weight: 700; }
+
+  /* --- Record list ------------------------------------------------------ */
+  #listview { max-height: 560px; overflow: auto; }
+  .rec { border: 1px solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusMedium);
+         margin-bottom: var(--spacingS); padding: var(--spacingM) var(--spacingL); }
+  .rec .recid { font-family: var(--fontFamilyMonospace); font-size: var(--fontSizeBase200);
+                color: var(--colorNeutralForeground3); margin-bottom: var(--spacingS);
+                display: flex; justify-content: space-between; gap: var(--spacingM); }
+  .rec .recid .count { color: var(--colorNeutralForeground1); font-weight: var(--fontWeightSemibold); white-space: nowrap; }
+  /* An applied row is still information the user reads, so it must not be dimmed.
+     The old opacity:.6 composited every value in the row down to 2.6-4.2:1 in BOTH
+     themes; a success tint plus the green rail marks the state and keeps all text
+     above 5:1. The "✓ applied" badge remains the non-colour carrier. */
+  .rec.applied { background: var(--colorPaletteGreenBackground1);
+                 border-color: var(--colorPaletteGreenBorder1);
+                 border-left: 4px solid var(--colorPaletteGreenForeground1); }
+  .rec .applied-badge { color: var(--colorPaletteGreenForeground1); font-weight: var(--fontWeightSemibold); }
   .rec ul { list-style: none; margin: 0; padding: 0; }
-  .rec li { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-top: 1px dashed #eee; font-size: 13px; flex-wrap: wrap; }
+  .rec li { display: flex; align-items: baseline; gap: var(--spacingS); padding: var(--spacingXS) 0;
+            border-top: 1px solid var(--colorNeutralStroke2); font-size: var(--fontSizeBase300); flex-wrap: wrap; }
   .rec li:first-child { border-top: 0; }
-  .rec .fname { font-family: 'Cascadia Code', Consolas, monospace; font-weight: 600; min-width: 190px; }
-  .rec .cur { color: var(--err); text-decoration: line-through; }
-  .rec .arrow { color: #999; }
-  .rec .rest { color: var(--ok); font-weight: 600; }
-  .rec .flags { margin-top: 8px; }
-  .banner { border-left: 4px solid var(--red); background: #fff5f6; padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+  .rec .fname { font-family: var(--fontFamilyMonospace); font-weight: var(--fontWeightSemibold); min-width: 190px; }
+  .rec .cur { color: var(--colorPaletteRedForeground1); text-decoration: line-through; }
+  .rec .arrow { color: var(--colorNeutralForeground3); }
+  .rec .rest { color: var(--colorPaletteGreenForeground1); font-weight: var(--fontWeightSemibold); }
+  .rec .flags { margin-top: var(--spacingS); }
+
+  /* --- Links ------------------------------------------------------------ */
+  a, .reclink { color: var(--colorBrandForegroundLink); text-decoration: none; }
+  a:hover, .reclink:hover { text-decoration: underline; }
+
+  /* --- Warning banner --------------------------------------------------- */
+  .banner { border: 1px solid var(--colorNeutralStroke2);
+            border-left: 4px solid var(--colorPaletteOrangeForeground1);
+            background: var(--colorPaletteYellowBackground1);
+            color: var(--colorNeutralForeground1);
+            padding: var(--spacingM) var(--spacingL); border-radius: var(--borderRadiusMedium);
+            font-size: var(--fontSizeBase300); margin-bottom: var(--spacingL); }
+
+  /* --- Combobox --------------------------------------------------------- */
   .combo { position: relative; }
-  .combo-list { position: absolute; z-index: 50; left: 0; right: 0; top: 100%; margin-top: 2px; background: #fff;
-    border: 1px solid var(--line); border-radius: 7px; max-height: 240px; overflow: auto;
-    box-shadow: 0 6px 18px rgba(0,0,0,.12); display: none; }
+  .combo-list { position: absolute; z-index: 50; left: 0; right: 0; top: 100%; margin-top: 2px;
+    background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1);
+    /* StrokeAccessible, NOT Stroke1: this popup's fill is the SAME token as the card
+       behind it, so the border is the only thing that draws the listbox's edge — and
+       a control boundary must clear 3:1 (WCAG 1.4.11). Stroke1 is 1.53:1 / 2.53:1,
+       i.e. no perceivable edge at all. The shadow does not count. */
+    border: 1px solid var(--colorNeutralStrokeAccessible); border-radius: var(--borderRadiusMedium);
+    max-height: 240px; overflow: auto; box-shadow: var(--shadow16); display: none; }
   .combo-list.open { display: block; }
-  .combo-list .opt { padding: 7px 11px; font-size: 13px; cursor: pointer; }
-  .combo-list .opt:hover, .combo-list .opt.active { background: #eef3fb; }
-  .combo-list .empty { padding: 7px 11px; color: #999; font-size: 12px; }
-  .builderbox { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; background: #f7f9fc; }
-  .builderbox summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--charcoal); }
-  .builderbox[open] summary { margin-bottom: 6px; }
+  .combo-list .opt { padding: var(--spacingS) var(--spacingM); font-size: var(--fontSizeBase300); cursor: pointer; }
+  .combo-list .opt:hover { background: var(--colorSubtleBackgroundHover); }
+  .combo-list .opt.active { background: var(--colorBrandBackground); color: var(--colorNeutralForegroundOnBrand); }
+  .combo-list .empty { padding: var(--spacingS) var(--spacingM); color: var(--colorNeutralForeground3);
+                       font-size: var(--fontSizeBase200); }
 
-  /* ====================================================================
-     Dark theme — applied via body.theme-dark. PPTB sets this by default;
-     the web/standalone host adds it when the OS prefers dark (set in JS).
-     ==================================================================== */
-  body.theme-dark { color-scheme: dark; --ink: #e6e6e6; --line: #3a3b42; --bg: #17181c; --ok: #4ec77a; --warn: #e3a857; --err: #ff6b81; }
-  body.theme-dark .card { background: #25262b; }
-  body.theme-dark .card h2 { color: #9aa0a6; }
-  body.theme-dark label { color: #e6e6e6; }
-  body.theme-dark input[type=text], body.theme-dark input[type=datetime-local], body.theme-dark input[type=number], body.theme-dark textarea, body.theme-dark select {
-    background: #1e1f24; color: var(--ink); border-color: var(--line); }
-  body.theme-dark .hint, body.theme-dark #status { color: #9aa0a6; }
-  body.theme-dark #summary .stat { background: #1e1f24; }
-  body.theme-dark #summary .stat b { color: #fff; }
-  body.theme-dark th { background: #2c2d33; }
-  body.theme-dark th, body.theme-dark td { border-color: var(--line); }
-  body.theme-dark .tablewrap, body.theme-dark .rec { border-color: var(--line); }
-  body.theme-dark .viewtoggle button, body.theme-dark .pager button, body.theme-dark .combo-list { background: #25262b; color: var(--ink); border-color: var(--line); }
-  body.theme-dark .combo-list .opt:hover, body.theme-dark .combo-list .opt.active { background: #33343a; }
-  body.theme-dark .ghost { background: #3a3b42; color: #e6e6e6; }
-  body.theme-dark code { background: #33343a; color: #e6e6e6; }
-  body.theme-dark .banner { background: #2a1e22; }
-  body.theme-dark .builderbox { background: #1f2127; }
-  body.theme-dark .rec .recid { color: #b9bcc2; }
-  body.theme-dark .rec li { border-color: #33343a; }
-  body.theme-dark .builderbox summary { color: var(--ink); }
-  body.theme-dark select option { background: #1e1f24; color: var(--ink); }
+  /* --- FetchXML builder ------------------------------------------------- */
+  .builderbox { border: 1px solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusMedium);
+                padding: var(--spacingS) var(--spacingL); margin-bottom: var(--spacingL);
+                background: var(--colorNeutralBackground2); }
+  .builderbox summary { cursor: pointer; font-weight: var(--fontWeightSemibold);
+                        font-size: var(--fontSizeBase300); color: var(--colorNeutralForeground1); }
+  .builderbox[open] summary { margin-bottom: var(--spacingXS); }
 
-  /* ====================================================================
-     Windows 95 theme — XrmToolBox WebView2 host (body[data-host="xtb"]).
-     Silver windows, teal desktop, navy title bars, 3-D bevels. Accessible:
-     black-on-silver ~6:1, white-on-navy ~14:1.
-     ==================================================================== */
-  body[data-host="xtb"] { background: #008080; color: #000; font-family: 'MS Sans Serif', Tahoma, 'Segoe UI', sans-serif; font-size: 12px; }
-  body[data-host="xtb"] main { max-width: none; }
-  body[data-host="xtb"] header { background: linear-gradient(90deg, #000080, #1084d0); color: #fff; border-bottom: 2px solid #c0c0c0; }
-  body[data-host="xtb"] header .author { color: #dfe7ff; }
-  body[data-host="xtb"] header #envlabel, body[data-host="xtb"] header .ver { color: #dfe7ff; border-color: #5a7fd0; }
-  body[data-host="xtb"] .card { background: #c0c0c0; border: 2px solid; border-color: #fff #000 #000 #fff; border-radius: 0; padding: 3px 3px 12px; }
-  body[data-host="xtb"] .card h2 { background: linear-gradient(90deg, #000080, #1084d0); color: #fff; text-transform: none; letter-spacing: 0; margin: -3px -3px 10px; padding: 3px 6px; }
-  body[data-host="xtb"] label { font-weight: 700; color: #000; }
-  body[data-host="xtb"] .hint, body[data-host="xtb"] #status { color: #404040; }
-  body[data-host="xtb"] input[type=text], body[data-host="xtb"] input[type=datetime-local], body[data-host="xtb"] input[type=number], body[data-host="xtb"] textarea, body[data-host="xtb"] select {
-    background: #fff; color: #000; border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; }
-  body[data-host="xtb"] button { background: #c0c0c0; color: #000; border: 2px solid; border-color: #fff #000 #000 #fff; border-radius: 0; box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080; font-weight: 400; }
-  body[data-host="xtb"] button:active:not(:disabled) { border-color: #808080 #fff #fff #808080; box-shadow: inset 1px 1px 0 #000; }
-  body[data-host="xtb"] .primary { font-weight: 700; outline: 1px solid #000; outline-offset: -5px; }
-  body[data-host="xtb"] .danger { font-weight: 700; color: #a80000; }
-  body[data-host="xtb"] #summary .stat { background: #fff; border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; }
-  body[data-host="xtb"] #summary .stat b { color: #000080; }
-  body[data-host="xtb"] th { background: #c0c0c0; color: #000; border: 2px solid; border-color: #fff #808080 #808080 #fff; }
-  body[data-host="xtb"] .tablewrap, body[data-host="xtb"] .combo-list, body[data-host="xtb"] .rec { border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; background: #fff; }
-  body[data-host="xtb"] .combo-list .opt:hover, body[data-host="xtb"] .combo-list .opt.active { background: #000080; color: #fff; }
-  body[data-host="xtb"] .viewtoggle button.active { background: #000080; color: #fff; }
-  body[data-host="xtb"] .rec .recid { color: #000080; }
-  body[data-host="xtb"] .banner { background: #fffbe0; border-left: 4px solid #a80000; border-radius: 0; color: #000; }
-  body[data-host="xtb"] .builderbox { background: #c0c0c0; border: 2px solid; border-color: #fff #000 #000 #fff; border-radius: 0; }
-  body[data-host="xtb"] .builderbox summary { color: #000; font-weight: 700; }
-  body[data-host="xtb"] code { background: #fff; color: #000; border: 1px solid #808080; }
-  body[data-host="xtb"] #log { background: #000; color: #0f0; border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; font-family: 'Lucida Console', Consolas, monospace; }
-  body[data-host="xtb"] a, body[data-host="xtb"] .reclink { color: #0000ee; }
-  body[data-host="xtb"] :focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
+  /* --- Respect the user's motion preference ----------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
 </style>
 </head>
 <body>
 <script>
   /* Host detection + default theme (runs before content paints to avoid a flash).
-     PPTB → dark by default; XrmToolBox (WebView2) → Windows 95; web/standalone → light (OS dark honoured). */
+     PPTB → Fluent dark; XrmToolBox (WebView2) and web/standalone → Fluent light
+     (a standalone/web host whose OS prefers dark gets the dark tokens too). */
   (function () {
     var P = !!window.dataverseAPI, X = !!window.XTB_CONFIG;
     var host = P ? "pptb" : X ? "xtb" : "web";
@@ -202,7 +480,7 @@
           </div>
         </div>
         <div>
-          <label for="bUserInput">Changed by <span style="font-weight:400;color:#8a8f98">(optional)</span></label>
+          <label for="bUserInput">Changed by <span class="subtle">(optional)</span></label>
           <div class="combo">
             <input type="text" id="bUserInput" autocomplete="off" placeholder="(all users)" title="Changed by user" />
             <div class="combo-list" id="bUserList"></div>
@@ -233,7 +511,7 @@
       </div>
     </details>
 
-    <label for="fetch">FetchXML <span style="font-weight:400;color:#8a8f98">(selects the records to restore)</span></label>
+    <label for="fetch">FetchXML <span class="subtle">(selects the records to restore)</span></label>
     <textarea id="fetch" placeholder="&lt;fetch&gt;&#10;  &lt;entity name=&quot;prx3_job&quot;&gt;&#10;    &lt;attribute name=&quot;prx3_jobid&quot; /&gt;&#10;    &lt;filter&gt; ... &lt;/filter&gt;&#10;  &lt;/entity&gt;&#10;&lt;/fetch&gt;"></textarea>
     <div class="hint">The entity name is read from the fetch. Only the primary-key column is needed; extra columns are ignored.</div>
     <div class="row">
@@ -250,7 +528,7 @@
         <div class="hint" id="utcEcho">&nbsp;</div>
       </div>
       <div>
-        <label for="cols">Restrict to columns <span style="font-weight:400;color:#8a8f98">(optional)</span></label>
+        <label for="cols">Restrict to columns <span class="subtle">(optional)</span></label>
         <input type="text" id="cols" autocomplete="off" placeholder="e.g. prx3_status, prx3_value (blank = all audited)…" />
         <div class="hint">Comma-separated allow-list. Blank reverts every audited field.</div>
       </div>
@@ -308,8 +586,8 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.8.0";        // tool build — bump on each deploy
-const BUILD_DATE = "2026-06-10";
+const APP_VERSION = "1.8.1";        // tool build — bump on each deploy
+const BUILD_DATE = "2026-09-07";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
 let PLAN = null;          // last computed restore plan
