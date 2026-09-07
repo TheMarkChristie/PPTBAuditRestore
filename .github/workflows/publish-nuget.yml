@@ -36,4 +36,14 @@ jobs:
           user: TheMarkChristie
 
       - name: Push to nuget.org
-        run: dotnet nuget push "artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
+        # pwsh does NOT expand globs for native commands, so passing "artifacts/*.nupkg"
+        # straight to dotnet reaches it literally and fails with "File does not exist".
+        # Resolve the path in PowerShell first, then pass the real filename.
+        run: |
+          $pkg = (Get-ChildItem "$env:GITHUB_WORKSPACE/artifacts/*.nupkg" | Select-Object -First 1).FullName
+          if (-not $pkg) { throw "no .nupkg found in artifacts" }
+          Write-Host "pushing $pkg"
+          dotnet nuget push $pkg `
+            --source https://api.nuget.org/v3/index.json `
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} `
+            --skip-duplicate
