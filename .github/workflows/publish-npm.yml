@@ -1,0 +1,47 @@
+name: Publish Audit Restore to npm
+
+# Publishes the Power Platform Toolbox package to npmjs.com via Trusted Publishing (OIDC).
+# There is NO npm token and NO secret anywhere in this workflow — the `id-token: write`
+# permission below is what mints the short-lived OIDC credential npm exchanges for publish
+# rights, so 2FA never prompts. Provenance attestations are generated automatically.
+#
+# Requires an npmjs.com Trusted Publisher configuration on the package
+# `proximo3-audit-restore` for:
+#   Organization or user: TheMarkChristie
+#   Repository:           PPTBAuditRestore
+#   Workflow filename:    publish-npm.yml
+#   Environment:          (leave blank)
+# The workflow filename is part of that trust configuration — renaming this file breaks publishing.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  id-token: write           # mints the OIDC token for npm Trusted Publishing
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # node-version 24 ships npm >= 11.5.1, which is the minimum that supports OIDC publishing.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      # The publishable package.json is at the REPO ROOT (not a pptb/ subfolder).
+      # dist/ is gitignored, so this build is what produces dist/index.html + dist/icon.svg
+      # from the canonical audit-restore.html; the `files` allowlist ships dist/ in the tarball.
+      # No `npm ci` — this package has zero dependencies.
+      - name: Build the ToolBox package
+        working-directory: .
+        run: npm run build
+
+      - name: Publish
+        working-directory: .
+        run: npm publish --access public
