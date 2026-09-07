@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>MarkChristie.AuditRestore</id>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <title>Audit Restore</title>
     <authors>Mark Christie</authors>
     <owners>Mark Christie</owners>
@@ -13,7 +13,7 @@
     <license type="expression">MIT</license>
     <description>Restore Dataverse records to their field state at a point in time using the audit log. Find affected records by table/user/date window, preview before→after changes, and apply in pages.</description>
     <summary>Restore Dataverse records to a point in time from the audit log.</summary>
-    <releaseNotes>1.0.2: the interface has been rebuilt in the Fluent 2 design language, so it now looks like a modern model-driven app - light in XrmToolBox, dark in Power Platform ToolBox. This is a visual change only; there is no change to what the tool does or how it restores records.</releaseNotes>
+    <releaseNotes>1.0.3: the interface now matches the other tools in the suite - one compact header, the same cards, tables and spacing. It also no longer switches to a dark theme when the tool is opened as a web resource inside Dynamics 365 on a machine set to dark mode; it stays light, like the app around it. This is a visual change only; nothing about how the tool finds or restores records has changed.</releaseNotes>
     <tags>XrmToolBox Plugin Dataverse Dynamics365 Audit Restore PointInTime Recovery</tags>
     <dependencies>
       <dependency id="XrmToolBox" version="1.2025.7.71" />

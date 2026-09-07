@@ -65,9 +65,10 @@
     --shadow16: 0 0 2px rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.14);
   }
 
-  /* Dark: Power Platform ToolBox. Colours only.
-     The bootstrap script also adds .theme-dark when a standalone/web host's OS
-     asks for dark, so one override serves both. color-scheme: dark makes the
+  /* Dark: Power Platform ToolBox ONLY. Colours only.
+     .theme-dark is the class the bootstrap script adds for that host, and only for
+     that host - the web resource and XrmToolBox hosts never get it, so the OS dark
+     preference is deliberately not followed there. color-scheme: dark makes the
      native date pickers, selects and scrollbars render dark too. */
   body[data-host="pptb"],
   body.theme-dark {
@@ -157,11 +158,13 @@
 
   /* Accessibility: a 2px Fluent focus stroke that is never removed, only
      restyled — black on light, white on dark. */
-  :focus-visible { outline: 2px solid var(--colorStrokeFocus2); outline-offset: 1px; border-radius: var(--borderRadiusMedium); }
+  :focus-visible { outline: 2px solid var(--colorStrokeFocus2); outline-offset: 2px; border-radius: var(--borderRadiusMedium); }
   ::placeholder { color: var(--colorNeutralForeground3); opacity: 1; }
 
   body {
     margin: 0;
+    /* House shell: the page gutter lives on the body, as in User Access Explorer. */
+    padding: var(--spacingL);
     font-family: var(--fontFamilyBase);
     font-size: var(--fontSizeBase300);
     line-height: var(--lineHeightBase300);
@@ -170,30 +173,37 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* --- Header ----------------------------------------------------------- */
-  header {
-    background: var(--colorNeutralBackground1);
-    color: var(--colorNeutralForeground1);
-    border-bottom: 1px solid var(--colorNeutralStroke2);
-    box-shadow: var(--shadow2);
-    padding: var(--spacingM) var(--spacingXL);
-    display: flex; align-items: center; gap: var(--spacingM);
+  /* --- Header -----------------------------------------------------------
+     One compact line, the same shell as User Access Explorer: a 24px mark, a
+     16px semibold title, a 12px muted byline (author + build), a spacer, then
+     the environment as trailing meta. No plate, no banner — the page ground
+     carries it. It shares main's max-width so the two align on wide screens. */
+  header.app {
+    display: flex; align-items: center; gap: var(--spacingS); flex-wrap: wrap;
+    max-width: 1600px; margin: 0 auto var(--spacingM); padding: 0;
   }
-  /* The Proximo 3 mark is drawn as a red ring with WHITE inner bands (see icon.svg),
-     so it needs the dark plate the app icon uses or the bands vanish on a light
-     header. #2B2B2B is that literal brand plate colour, not a theme colour. */
-  header .logo { width: 32px; height: 32px; flex: 0 0 auto; padding: 3px;
-                 background: #2B2B2B; border-radius: var(--borderRadiusMedium); }
-  header h1 { font-size: var(--fontSizeBase400); margin: 0; font-weight: var(--fontWeightSemibold); }
-  header .author { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); font-style: italic; }
-  header #envlabel { color: var(--colorNeutralForeground2); font-size: var(--fontSizeBase200); margin-left: auto; }
-  header .ver {
-    color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); margin-left: var(--spacingM);
-    padding: 2px var(--spacingS); border: 1px solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusCircular);
-  }
+  /* The Proximo 3 mark is a red ring with WHITE inner bands (see icon.svg), so it
+     still needs the dark plate the app icon uses or the bands vanish on a light
+     header. That plate is now a <rect> INSIDE the svg — literal brand artwork
+     (#2B2B2B, the same plate colour as icon.svg), so no colour is hard-coded
+     outside the artwork. The viewBox is cropped to the mark so it still reads
+     at 24px. */
+  header.app .hicon { width: 24px; height: 24px; flex: none; }
+  header.app h1 { font-size: var(--fontSizeBase400); line-height: 22px; margin: 0;
+                  font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1);
+                  white-space: nowrap; }
+  .byline { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200);
+            white-space: nowrap; }
+  .grow { flex: 1 1 auto; }
+  /* Trailing meta. Same byline ink, but the environment can be a long org host, so
+     it is the one item in the row allowed to ellipsise instead of forcing a wrap. */
+  header.app #envlabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
-  /* --- Surfaces --------------------------------------------------------- */
-  main { max-width: 1100px; margin: 0 auto; padding: var(--spacingXL); }
+  /* --- Surfaces ---------------------------------------------------------
+     1600px is the house shell width (User Access Explorer). This tool earns it:
+     the before -> after grid is five columns of record ids, field names and both
+     old and new values. The gutter is on the body, so main only adds the tail. */
+  main { max-width: 1600px; margin: 0 auto; padding: 0 0 40px; }
   .card {
     background: var(--colorNeutralBackground1);
     border: 1px solid var(--colorNeutralStroke2);
@@ -204,10 +214,13 @@
   }
   .card h2 {
     font-size: var(--fontSizeBase400);
+    line-height: 22px;
     font-weight: var(--fontWeightSemibold);
     color: var(--colorNeutralForeground1);
-    margin: 0 0 var(--spacingM);
+    margin: 0 0 var(--spacingS);
   }
+  .card .desc { color: var(--colorNeutralForeground2); font-size: var(--fontSizeBase300);
+                margin: 0 0 var(--spacingM); max-width: 90ch; }
 
   /* --- Forms ------------------------------------------------------------ */
   label { display: block; font-size: var(--fontSizeBase300); font-weight: var(--fontWeightSemibold);
@@ -247,7 +260,8 @@
   .row { display: flex; gap: var(--spacingL); flex-wrap: wrap; }
   .row > div { flex: 1; min-width: 200px; }
   .row > div.narrow { flex: 0 0 240px; }
-  .hint { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground3); margin-top: var(--spacingXS); }
+  /* Foreground2, the house value for supporting copy (10.1:1 light / 10.0:1 dark). */
+  .hint { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground2); margin-top: var(--spacingXS); }
   #status { font-size: var(--fontSizeBase300); color: var(--colorNeutralForeground3); }
   #tablewrap { display: none; }
 
@@ -271,16 +285,19 @@
     transition: background var(--durationFaster) var(--curveEasyEase);
   }
   button:hover:not(:disabled) { background: var(--colorNeutralBackground1Hover); }
+  button:active:not(:disabled) { background: var(--colorNeutralBackground3); }
   .primary { background: var(--colorBrandBackground); border-color: var(--colorBrandBackground);
              color: var(--colorNeutralForegroundOnBrand); }
   .primary:hover:not(:disabled) { background: var(--colorBrandBackgroundHover); border-color: var(--colorBrandBackgroundHover); }
-  .danger  { background: var(--colorPaletteRedForeground1); border-color: var(--colorPaletteRedForeground1);
-             color: var(--colorNeutralForegroundOnBrand); }
-  /* No red hover token exists in the palette, so darken the fill rather than
-     invent a colour. Both themes stay above AA against their ink. */
-  .danger:hover:not(:disabled) { filter: brightness(.92); }
-  /* The dark theme's red fill is light, so the resting state needs dark ink (7.5:1). */
-  body[data-host="pptb"] .danger, body.theme-dark .danger { color: #000000; }
+  .primary:active:not(:disabled) { background: var(--colorBrandBackgroundPressed); border-color: var(--colorBrandBackgroundPressed); }
+  /* The house danger button (User Access Explorer): red ink on the neutral fill with
+     a red boundary, tinting to the red background on hover. Red ink on Background1 is
+     5.85:1 light / 5.20:1 dark, and on the hover ground 5.48:1 / 5.81:1 — and unlike
+     the old filled variant it needs no hard-coded ink for the dark theme. */
+  .danger  { background: var(--colorNeutralBackground1); border-color: var(--colorPaletteRedForeground1);
+             color: var(--colorPaletteRedForeground1); }
+  .danger:hover:not(:disabled) { background: var(--colorPaletteRedBackground1); }
+  .danger:active:not(:disabled) { background: var(--colorPaletteRedBackground1); }
   /* A ghost button still draws a visible boundary, so it takes StrokeAccessible too
      (WCAG 1.4.11) — Stroke1 would fail at 1.53:1 / 2.53:1. */
   .ghost   { background: transparent; border-color: var(--colorNeutralStrokeAccessible); color: var(--colorNeutralForeground2); }
@@ -328,14 +345,27 @@
   #summary .stat small { display: block; color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
 
   /* --- Tables ----------------------------------------------------------- */
-  table { width: 100%; border-collapse: collapse; font-size: var(--fontSizeBase200);
+  table { width: 100%; border-collapse: collapse; font-size: var(--fontSizeBase300);
           /* Digits share one advance width, so figures stack in a true column. */
           font-variant-numeric: tabular-nums; }
-  th, td { text-align: left; padding: var(--spacingS) var(--spacingM);
+  th, td { text-align: left; padding: var(--spacingXS) var(--spacingM);
            border-bottom: 1px solid var(--colorNeutralStroke2); }
-  th { background: var(--colorNeutralBackground2); color: var(--colorNeutralForeground2);
+  /* Background3, not Background2: Background2 is now the zebra stripe, so the sticky
+     header needs the next step to stay distinct from it. Foreground2 on it is
+     9.22:1 light / 12.68:1 dark. */
+  th { background: var(--colorNeutralBackground3); color: var(--colorNeutralForeground2);
        font-weight: var(--fontWeightSemibold); border-bottom: 1px solid var(--colorNeutralStroke1);
        position: sticky; top: 0; z-index: 1; }
+  /* House zebra + row hover. NOTE: a record's fields occupy one row each and the
+     record id cell is rowspan'd across them, so the stripe alternates by FIELD row,
+     not by record — the rowspan'd cell is what groups a record, and the id column
+     reads as one unbroken block because it keeps its own row's ground.
+     The hover ground is Background3, not SubtleBackgroundHover: these rows carry
+     record links in brand ink, and brand link on the dark SubtleBackgroundHover
+     (#383838) is only 4.17:1. On Background3 it is 6.11:1 light / 6.56:1 dark.
+     In the light theme the two tokens are the same #f5f5f5, so nothing changes. */
+  tbody tr:nth-child(even) { background: var(--colorNeutralBackground2); }
+  tbody tr:hover { background: var(--colorNeutralBackground3); }
   /* Every cell centres on one axis whatever it holds — a bare glyph, a pill, a
      two-line value, or a rowspan'd record id — so rows line up across the table. */
   thead th, tbody td { vertical-align: middle; }
@@ -347,10 +377,15 @@
   /* A centred cell's contents centre as a block too, so pills and glyphs share the
      same axis as plain text in the column. */
   td.num > * { display: inline-flex; align-items: center; justify-content: center; }
-  .tablewrap { max-height: 420px; overflow: auto; border: 1px solid var(--colorNeutralStroke2);
-               border-radius: var(--borderRadiusMedium); }
+  .tablewrap { max-height: 420px; overflow: auto; background: var(--colorNeutralBackground1);
+               border: 1px solid var(--colorNeutralStroke2);
+               border-radius: var(--borderRadiusLarge); }
+  /* The chip keeps a hairline edge: its fill is Background3, which is also the zebra
+     stripe's neighbour and the row-hover ground, so without a border it would dissolve
+     into a hovered row. */
   code { background: var(--colorNeutralBackground3); color: var(--colorNeutralForeground1);
-         font-family: var(--fontFamilyMonospace); padding: 1px 5px; border-radius: var(--borderRadiusSmall); }
+         border: 1px solid var(--colorNeutralStroke2);
+         font-family: var(--fontFamilyMonospace); padding: 0 5px; border-radius: var(--borderRadiusSmall); }
   .flag { color: var(--colorPaletteOrangeForeground1); font-size: var(--fontSizeBase200); }
 
   /* --- View toggle & pager ---------------------------------------------- */
@@ -399,13 +434,19 @@
   a, .reclink { color: var(--colorBrandForegroundLink); text-decoration: none; }
   a:hover, .reclink:hover { text-decoration: underline; }
 
-  /* --- Warning banner --------------------------------------------------- */
-  .banner { border: 1px solid var(--colorNeutralStroke2);
-            border-left: 4px solid var(--colorPaletteOrangeForeground1);
+  /* --- Warning banner ---------------------------------------------------
+     The house .bar.warn recipe from User Access Explorer: yellow ground, orange
+     boundary, NEUTRAL ink — Fluent ships a yellow background but no AA-safe yellow
+     ink, so the hue lives in the ground and the border and never in the text
+     (15.3:1 light / 9.8:1 dark). It keeps the block-level bold lead line and its
+     full-width place above the workflow: it guards a write with no automatic undo. */
+  .banner { margin: 0 0 var(--spacingL); padding: var(--spacingS) var(--spacingM);
+            border: 1px solid var(--colorPaletteOrangeForeground1);
+            border-radius: var(--borderRadiusMedium);
             background: var(--colorPaletteYellowBackground1);
             color: var(--colorNeutralForeground1);
-            padding: var(--spacingM) var(--spacingL); border-radius: var(--borderRadiusMedium);
-            font-size: var(--fontSizeBase300); margin-bottom: var(--spacingL); }
+            font-size: var(--fontSizeBase300); }
+  .banner b { display: block; margin-bottom: 2px; }
 
   /* --- Combobox --------------------------------------------------------- */
   .combo { position: relative; }
@@ -442,23 +483,34 @@
 <body>
 <script>
   /* Host detection + default theme (runs before content paints to avoid a flash).
-     PPTB → Fluent dark; XrmToolBox (WebView2) and web/standalone → Fluent light
-     (a standalone/web host whose OS prefers dark gets the dark tokens too). */
+     PPTB → Fluent dark. XrmToolBox (WebView2) and web/standalone → Fluent light,
+     always — the OS colour preference is deliberately NOT followed. */
   (function () {
     var P = !!window.dataverseAPI, X = !!window.XTB_CONFIG;
     var host = P ? "pptb" : X ? "xtb" : "web";
     document.body.dataset.host = host;
+    // Dark is for Power Platform ToolBox ONLY. The web host deliberately does NOT
+    // follow prefers-color-scheme: a web resource sits inside a model-driven app's
+    // light chrome, so honouring the OS preference makes the tool clash with the
+    // app hosting it. XrmToolBox is light for the same reason.
     if (host === "pptb") document.body.classList.add("theme-dark");
-    else if (host === "web" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
-      document.body.classList.add("theme-dark");
   })();
 </script>
-<header>
-  <svg class="logo" viewBox="0 0 2048 2048" aria-hidden="true"><path fill="#EE163B" d="M 888.79 442.59 C 896.494 441.854 903.473 439.769 907.765 447.564 C 907.838 450.753 907.288 453.303 905.427 455.974 C 896.618 468.615 888.543 482.011 880.486 495.159 L 797.843 629.775 L 768.541 677.084 C 764.2 684.088 754.304 704.396 745.775 704.226 C 735.593 699.137 713.654 650.879 704.849 636.88 C 670.705 663.42 648.701 684.315 622.944 719.926 C 558.458 809.084 531.832 925.972 549.015 1034.34 C 566.103 1141.99 625.863 1238.22 714.787 1301.26 C 833.81 1387.41 987.736 1413.44 1131.37 1390.46 C 1262.85 1369.42 1392.57 1310.22 1472.73 1200.01 C 1535.8 1112.92 1558.61 997.835 1541.52 892.434 C 1496.03 611.924 1156.24 512.389 911.955 553.071 C 927.41 530.597 940.878 505.952 956.619 482.82 C 1025.18 477.356 1094.17 481.2 1161.7 494.247 C 1293.2 518.976 1423.48 584.746 1506.42 691.717 C 1590.27 799.867 1623.87 928.904 1607.06 1064.09 C 1591.22 1193.03 1524.63 1310.34 1422.03 1390.04 C 1162.36 1591.01 736.626 1559.73 532.059 1292.85 C 445.075 1177.38 407.059 1032.29 426.241 889.003 C 440.956 778.349 485.656 679.816 564.046 599.202 C 586.435 576.178 608.51 558.414 633.925 538.98 C 624.675 527.056 584.206 481.277 580.311 471.624 C 581.012 466.16 585.075 464.196 590.229 463.735 C 689.467 454.855 789.532 450.558 888.79 442.59 z"/><path fill="#fff" d="M 1006.6 633.438 C 1107.76 628.955 1278.33 645.484 1360.84 714.594 C 1373.34 725.319 1385.78 743.807 1385.59 760.739 C 1385.22 794.655 1344.86 821.27 1318.14 833.709 C 1227.41 875.948 1121.22 887.217 1022.34 887.125 C 1004.8 887.069 987.267 886.431 969.771 885.212 C 889.785 880.299 751.377 859.174 691.489 797.911 C 682.29 788.5 673.937 770.948 675.577 757.507 C 678.337 734.878 692.782 721.14 708.989 707.289 C 715.315 715.954 727.836 730.08 736.547 735.901 C 763.787 754.105 773.29 728.896 785.195 709.896 L 817.245 659.15 C 878.728 641.672 942.975 635.694 1006.6 633.438 z"/><path fill="#fff" d="M 1384.77 1019.93 C 1386.68 1030.28 1386.18 1154.96 1384.28 1164.32 C 1379.92 1185.84 1358.2 1202.89 1340.99 1214.14 C 1223.47 1290.99 991.499 1293.37 857.463 1265.18 C 801.723 1253.45 715.17 1228.31 682.717 1178.63 C 673.824 1159.8 676.35 1132.46 676.419 1111.58 L 676.926 1022.01 C 677.817 1023.05 678.732 1024.06 679.67 1025.06 C 689.96 1035.93 704.457 1045.8 717.297 1053.45 C 798.078 1101.53 910.556 1117.32 1002.71 1120.21 C 1118.15 1123.82 1297.21 1104.22 1384.77 1019.93 z"/><path fill="#fff" d="M 1384.66 824.742 C 1386.7 832.137 1385.89 953.658 1383.95 962.679 C 1379.26 984.451 1362.31 999.631 1344.52 1011.49 C 1229.24 1088.34 1002.32 1093.62 870.344 1067.58 C 811.408 1055.95 717.927 1032.1 682.98 980.103 C 672.894 961.478 675.754 935.121 675.783 914.161 L 675.944 827.136 C 688.747 842.974 709.204 856.909 727.241 866.011 C 823.814 914.739 947.637 928.388 1054.5 925.886 C 1155.46 923.522 1311.1 900.588 1384.66 824.742 z"/></svg>
+<header class="app">
+  <!-- The mark, cropped to its artwork and sized to 24px like the rest of the suite.
+       The #2B2B2B plate is a rect INSIDE the svg because the mark's inner bands are
+       white and would vanish on a light header; it is brand artwork, not a theme colour. -->
+  <svg class="hicon" viewBox="249 249 1533 1533" aria-hidden="true">
+    <rect x="249" y="249" width="1533" height="1533" rx="255" fill="#2B2B2B"/>
+    <path fill="#EE163B" d="M 888.79 442.59 C 896.494 441.854 903.473 439.769 907.765 447.564 C 907.838 450.753 907.288 453.303 905.427 455.974 C 896.618 468.615 888.543 482.011 880.486 495.159 L 797.843 629.775 L 768.541 677.084 C 764.2 684.088 754.304 704.396 745.775 704.226 C 735.593 699.137 713.654 650.879 704.849 636.88 C 670.705 663.42 648.701 684.315 622.944 719.926 C 558.458 809.084 531.832 925.972 549.015 1034.34 C 566.103 1141.99 625.863 1238.22 714.787 1301.26 C 833.81 1387.41 987.736 1413.44 1131.37 1390.46 C 1262.85 1369.42 1392.57 1310.22 1472.73 1200.01 C 1535.8 1112.92 1558.61 997.835 1541.52 892.434 C 1496.03 611.924 1156.24 512.389 911.955 553.071 C 927.41 530.597 940.878 505.952 956.619 482.82 C 1025.18 477.356 1094.17 481.2 1161.7 494.247 C 1293.2 518.976 1423.48 584.746 1506.42 691.717 C 1590.27 799.867 1623.87 928.904 1607.06 1064.09 C 1591.22 1193.03 1524.63 1310.34 1422.03 1390.04 C 1162.36 1591.01 736.626 1559.73 532.059 1292.85 C 445.075 1177.38 407.059 1032.29 426.241 889.003 C 440.956 778.349 485.656 679.816 564.046 599.202 C 586.435 576.178 608.51 558.414 633.925 538.98 C 624.675 527.056 584.206 481.277 580.311 471.624 C 581.012 466.16 585.075 464.196 590.229 463.735 C 689.467 454.855 789.532 450.558 888.79 442.59 z"/>
+    <path fill="#fff" d="M 1006.6 633.438 C 1107.76 628.955 1278.33 645.484 1360.84 714.594 C 1373.34 725.319 1385.78 743.807 1385.59 760.739 C 1385.22 794.655 1344.86 821.27 1318.14 833.709 C 1227.41 875.948 1121.22 887.217 1022.34 887.125 C 1004.8 887.069 987.267 886.431 969.771 885.212 C 889.785 880.299 751.377 859.174 691.489 797.911 C 682.29 788.5 673.937 770.948 675.577 757.507 C 678.337 734.878 692.782 721.14 708.989 707.289 C 715.315 715.954 727.836 730.08 736.547 735.901 C 763.787 754.105 773.29 728.896 785.195 709.896 L 817.245 659.15 C 878.728 641.672 942.975 635.694 1006.6 633.438 z"/>
+    <path fill="#fff" d="M 1384.77 1019.93 C 1386.68 1030.28 1386.18 1154.96 1384.28 1164.32 C 1379.92 1185.84 1358.2 1202.89 1340.99 1214.14 C 1223.47 1290.99 991.499 1293.37 857.463 1265.18 C 801.723 1253.45 715.17 1228.31 682.717 1178.63 C 673.824 1159.8 676.35 1132.46 676.419 1111.58 L 676.926 1022.01 C 677.817 1023.05 678.732 1024.06 679.67 1025.06 C 689.96 1035.93 704.457 1045.8 717.297 1053.45 C 798.078 1101.53 910.556 1117.32 1002.71 1120.21 C 1118.15 1123.82 1297.21 1104.22 1384.77 1019.93 z"/>
+    <path fill="#fff" d="M 1384.66 824.742 C 1386.7 832.137 1385.89 953.658 1383.95 962.679 C 1379.26 984.451 1362.31 999.631 1344.52 1011.49 C 1229.24 1088.34 1002.32 1093.62 870.344 1067.58 C 811.408 1055.95 717.927 1032.1 682.98 980.103 C 672.894 961.478 675.754 935.121 675.783 914.161 L 675.944 827.136 C 688.747 842.974 709.204 856.909 727.241 866.011 C 823.814 914.739 947.637 928.388 1054.5 925.886 C 1155.46 923.522 1311.1 900.588 1384.66 824.742 z"/>
+  </svg>
   <h1>Dataverse Audit Restore</h1>
-  <span class="author">by Mark Christie</span>
-  <span id="envlabel">resolving environment…</span>
-  <span class="ver" id="verlabel" title="Tool build / Dataverse org version">v…</span>
+  <span class="byline">by Mark Christie &middot; <span id="verlabel" title="Tool build / Dataverse org version">v…</span></span>
+  <span class="grow"></span>
+  <span class="byline" id="envlabel">resolving environment…</span>
 </header>
 
 <main>
@@ -586,7 +638,7 @@
 
 <script>
 "use strict";
-const APP_VERSION = "1.8.1";        // tool build — bump on each deploy
+const APP_VERSION = "1.8.2";        // tool build — bump on each deploy
 const BUILD_DATE = "2026-09-07";
 const API_VER = "v9.2";
 let ORG_VERSION = null;             // Dataverse org version, resolved on load
